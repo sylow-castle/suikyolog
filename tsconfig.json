@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "allowJs": true, // JSファイルをインポート可能にする
+        "checkJs": false, // 本番JSファイルの型チェックはしない（必要ならtrueに）
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "skipLibCheck": true
+    }
+}
