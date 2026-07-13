@@ -2,19 +2,13 @@ import { SyslogStmt } from "./SyslogStmt.js";
 
 export class ConsoleLogger {
   #level = 1;
-  #version = 1;
-  #facility = 16;
-  #hostname = SyslogStmt.NILVALUE;
-  #appname = SyslogStmt.NILVALUE;
-  #procId = SyslogStmt.NILVALUE;
-  #msgId = SyslogStmt.NILVALUE;
-  #validator = new SyslogStmt();
+  #template = new SyslogStmt();
 
   constructor() {
     ['emerg', 'alert', 'crit', 'err', 'warn', 'notice', 'info', 'debug'].forEach(level => {
       this[level] = (syslogStmt) => {
         const upperCase = level.charAt(0).toUpperCase() + level.slice(1)
-        const finalStmt = this.createSyslogStmt(syslogStmt).sev(upperCase);
+        const finalStmt = syslogStmt.clone().sev(upperCase);
         this.log(finalStmt);
         return this;
       };
@@ -22,24 +16,10 @@ export class ConsoleLogger {
   }
   /**
    * このロガーの設定を元にSyslogStmtを設定、生成する
-   * @param {SyslogStmt | undefined} syslogStmt ログの元となるSyslogStmt。指定がなければ新規に作成する
    * @returns {SyslogStmt} 設定済みのSyslogStmt
    */
-  createSyslogStmt(syslogStmt) {
-    if (typeof syslogStmt === 'undefined') {
-      syslogStmt = new SyslogStmt();
-    } else if (!(syslogStmt instanceof SyslogStmt)) {
-      throw new Error("Invalid syslogStmt");
-    }
-
-    syslogStmt.app(this.#appname)
-      .ver(this.#version)
-      .fac(this.#facility)
-      .host(this.#hostname)
-      .proc(this.#procId)
-      .msgId(this.#msgId);
-
-    return syslogStmt;
+  createSyslogStmt() {
+    return this.#template.clone();
   }
 
   /**
@@ -47,7 +27,7 @@ export class ConsoleLogger {
    * @returns {ConsoleLogger}
    */
   level(level) {
-    if (Number.isInteger(level) && 0 <= level && level <= 7) {
+    if (Number.isInteger(level) && SyslogStmt.sevNum.Emerg <= level && level <= SyslogStmt.sevNum.Debug) {
       this.#level = level;
     } else {
       throw new Error(`Invalid level: ${level}`);
@@ -61,8 +41,7 @@ export class ConsoleLogger {
    * @returns 
    */
   ver(version) {
-    this.#validator.ver(version);
-    this.#version = version;
+    this.#template.ver(version);
     return this;
   }
 
@@ -72,8 +51,7 @@ export class ConsoleLogger {
    * @returns 
    */
   fac(facility) {
-    this.#validator.fac(facility);
-    this.#facility = facility;
+    this.#template.fac(facility);
     return this;
   }
 
@@ -83,8 +61,7 @@ export class ConsoleLogger {
    * @returns {ConsoleLogger}
    */
   host(hostname) {
-    this.#validator.host(hostname);
-    this.#hostname = hostname;
+    this.#template.host(hostname);
     return this;
   }
 
@@ -94,8 +71,7 @@ export class ConsoleLogger {
    * @returns {ConsoleLogger}
    */
   app(appname) {
-    this.#validator.app(appname);
-    this.#appname = appname;
+    this.#template.app(appname);
     return this;
   }
 
@@ -105,8 +81,7 @@ export class ConsoleLogger {
    * @returns {ConsoleLogger}
    */
   proc(procId) {
-    this.#validator.proc(procId);
-    this.#procId = procId;
+    this.#template.proc(procId);
     return this;
   }
 
@@ -116,8 +91,7 @@ export class ConsoleLogger {
    * @returns {ConsoleLogger}
    */
   msgId(msgId) {
-    this.#validator.msgId(msgId);
-    this.#msgId = msgId;
+    this.#template.msgId(msgId);
     return this;
   }
 

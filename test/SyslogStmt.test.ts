@@ -14,7 +14,8 @@ describe('SyslogStmt', () => {
   });
 
   it("rfc5424モードでの典型例", () => {
-    const now = new Date();
+    //以下のnowは次の時間のつもり：2026-07-13T23:08:19.423+09:00
+    const now = 1783898419423
     const builder = new SyslogStmt();
     const stmt = builder.gen(testMessage)
       .time(now)
@@ -25,7 +26,7 @@ describe('SyslogStmt', () => {
       .proc("testSyslogStmt")
       .msgId("rfc5424")
 
-    expect(stmt.toString(undefined)).toBe(`<162> 1 ${now.toISOString()} localhost suikyo testSyslogStmt rfc5424 - ${BOM}test message`);
+    expect(stmt.toString(undefined)).toBe(`<162> 1 2026-07-12T23:20:19.423Z localhost suikyo testSyslogStmt rfc5424 - ${BOM}test message`);
   });
 
   it("rfc5424モードでの典型例(構造化データ付き)", () => {
@@ -85,7 +86,7 @@ describe('SyslogStmt', () => {
 
   it("facilityのバリデーション", () => {
     const stmt = new SyslogStmt();
-    const testArgs = [-1, 24, null, undefined, "Kernel", "Local0"];
+    const testArgs = [-1, 24, null, undefined, "kernel", "Local0"];
     for (const invalidArg of testArgs) {
       expect(() => stmt.fac(invalidArg)).toThrow(/Invalid facility:/);
     }
@@ -102,36 +103,36 @@ describe('SyslogStmt', () => {
   it("hostnameのバリデーション", () => {
     const stmt = new SyslogStmt();
     const longStr = "a".repeat(256);
-    const testArgs = [longStr, "ホストネーム"]
+    const testArgs = [longStr, "ホストネーム", 0]
     for (const invalidArg of testArgs) {
-      expect(() => stmt.host(invalidArg)).toThrow(/Invalid hostname:/);
+      expect(() => stmt.host(invalidArg as any)).toThrow(/Invalid hostname:/);
     }
   });
 
   it("appnameのバリデーション", () => {
     const stmt = new SyslogStmt();
     const longStr = "a".repeat(49);
-    const testArgs = [longStr, "アプリケーション名"]
+    const testArgs = [longStr, "アプリケーション名", 0]
     for (const invalidArg of testArgs) {
-      expect(() => stmt.app(invalidArg)).toThrow(/Invalid appname:/);
+      expect(() => stmt.app(invalidArg as any)).toThrow(/Invalid appname:/);
     }
   });
 
   it("procIdのバリデーション", () => {
     const stmt = new SyslogStmt();
     const longStr = "a".repeat(129);
-    const testArgs = [longStr, "プロセスID"]
+    const testArgs = [longStr, "プロセスID", 0]
     for (const invalidArg of testArgs) {
-      expect(() => stmt.proc(invalidArg)).toThrow(/Invalid procId:/);
+      expect(() => stmt.proc(invalidArg as any)).toThrow(/Invalid procId:/);
     }
   });
 
   it("msgIdのバリデーション", () => {
     const stmt = new SyslogStmt();
     const longStr = "a".repeat(33);
-    const testArgs = [longStr, "メッセージID"]
+    const testArgs = [longStr, "メッセージID", 0]
     for (const invalidArg of testArgs) {
-      expect(() => stmt.msgId(invalidArg)).toThrow(/Invalid msgId:/);
+      expect(() => stmt.msgId(invalidArg as any)).toThrow(/Invalid msgId:/);
     }
   });
 
