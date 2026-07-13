@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { StructuredData } from '../src/StructuredData.js';
 
-describe('StructuredData', () => {
+describe("StructuredDataクラスのテスト", () => {
   test("SDIDの典型例", () => {
     const sd = new StructuredData()
       .add("testSdId", "testKey", "testValue");
@@ -42,21 +42,16 @@ describe('StructuredData', () => {
     }).toThrow(/SD-NAME is 1-32 length/);
   });
 
-  test("SDIDに禁止文字を指定するとエラーを投げる", () => {
+  test.for([
+    { invalidSdId: "=" },
+    { invalidSdId: "]" },
+    { invalidSdId: '"' },
+    { invalidSdId: " " },
+  ])("SDIDに禁止文字を指定するとエラーを投げる(invalidSdId: $invalidSdId)", ({ invalidSdId }) => {
     const sd = new StructuredData();
-    const fobbidens = ['=', ']', '"', ' '];
-
-    for (const char of fobbidens) {
-      const sdId = `abc${char}def`;
-      try {
-        expect(() => {
-          sd.add(sdId, "testName", "testValue");
-        }).toThrow(/SD-NAME has not allowed chars/);
-      } catch (e) {
-        console.error(`sdId: ${sdId}`);
-        throw e;
-      }
-    }
+    expect(() => {
+      sd.add(invalidSdId, "testName", "testValue");
+    }).toThrow(/SD-NAME has not allowed chars/);
   });
 
   test("キー名にnullを指定するとエラーを投げる", () => {
@@ -83,31 +78,38 @@ describe('StructuredData', () => {
     }).toThrow(/SD-NAME is 1-32 length/);
   });
 
-  test("キー名に禁止文字を指定するとエラーを投げる", () => {
+  test.for([
+    { paramName: "=" },
+    { paramName: "]" },
+    { paramName: '"' },
+    { paramName: " " },
+  ])("キー名に禁止文字を指定するとエラーを投げる(paramName: $paramName)", ({ paramName }) => {
     const sd = new StructuredData();
-    const fobbidens = ['=', ']', '"', ' '];
-    for (const char of fobbidens) {
-      const paramName = `abc${char}def`
-      try {
-        expect(() => {
-          sd.add("testSdId", paramName, "testValue");
-        }).toThrow(/SD-NAME has not allowed chars/);
-      } catch (e) {
-        console.log(`paramName: ${paramName}`)
-        throw e;
-      }
-    }
+    expect(() => {
+      sd.add("testSdId", paramName, "testValue");
+    }).toThrow(/SD-NAME has not allowed chars/);
   });
 
-  test('PARAM-VALUEは",],\をエスケープする', () => {
+  test.for([
+    { paramValue: '"', escaped: '\\"' },
+    { paramValue: ']', escaped: '\\]' },
+    { paramValue: '\\', escaped: '\\\\' },
+  ])(`PARAM-VALUEは",],\\をエスケープする（paramValue: $escaped）`, ({ paramValue, escaped }) => {
     const sd = new StructuredData()
-      .add("testSdId", "testKey", '"]\\');
-    expect(sd.toString()).toBe(`[testSdId testKey="\\"\\]\\\\"]`);
+      .add("testSdId", "testKey", paramValue);
+    expect(sd.toString()).toBe(`[testSdId testKey="${escaped}"]`);
   });
 
 
+  test("useでSD-IDを指定する", () => {
+    const sd = new StructuredData();
+    sd.add("testSdId1", "testName1", "testParam1")
+      .add("testSdId2", "testName2", "testParam2")
+      .use("testSdId1")
+      .add("testName3", "testParam3", undefined)
 
-
+    expect(sd.toString()).toBe(`[testSdId1 testName1="testParam1" testName3="testParam3"][testSdId2 testName2="testParam2"]`);
+  });
 
   test("useに文字列以外を投げるとエラーを投げる", () => {
     const sd = new StructuredData();

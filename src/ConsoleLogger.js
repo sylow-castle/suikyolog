@@ -7,9 +7,9 @@ export class ConsoleLogger {
   constructor() {
     ['emerg', 'alert', 'crit', 'err', 'warn', 'notice', 'info', 'debug'].forEach(level => {
       this[level] = (syslogStmt) => {
-        const upperCase = level.charAt(0).toUpperCase() + level.slice(1)
-        const finalStmt = syslogStmt.clone().sev(upperCase);
-        this.log(finalStmt);
+        const upper = level.charAt(0).toUpperCase() + level.slice(1)
+        const finalStmt = syslogStmt.clone().sev(upper);
+        this.log(finalStmt, "rfc5424");
         return this;
       };
     });

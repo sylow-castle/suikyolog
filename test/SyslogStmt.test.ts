@@ -5,7 +5,7 @@ import { StructuredData } from '../src/StructuredData.js';
 
 const BOM = "\uFEFF";
 const testMessage = "test message";
-describe('SyslogStmt', () => {
+describe("SyslogStmtクラスのテスト", () => {
   test("simpleモードでの典型例", () => {
     const time = new Date();
     const stmt = new SyslogStmt().gen(testMessage).time(time);
@@ -44,104 +44,110 @@ describe('SyslogStmt', () => {
     expect(stmt.toString("rfc5424")).toBe(`<129> 1 ${now.toISOString()} - - - - ${sd.toString()} ${BOM}${testMessage}`);
   });
 
-  test("各重大度のメソッドはその重大度を設定する", () => {
+  test.for([
+    { severity: "emerg", expectPri: 128 },
+    { severity: "crit", expectPri: 129 },
+    { severity: "alert", expectPri: 130 },
+    { severity: "err", expectPri: 131 },
+    { severity: "warn", expectPri: 132 },
+    { severity: "notice", expectPri: 133 },
+    { severity: "info", expectPri: 134 },
+    { severity: "debug", expectPri: 135 },
+  ])(`重大度メソッドはその重大度に設定する（severity: $severity）`, ({ severity, expectPri }) => {
     const now = new Date();
     const stmt = new SyslogStmt().gen(testMessage).time(now);
 
     //初期値は重大度1
     expect(stmt.toString("rfc5424")).toBe(`<129> 1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
-
-    const expectPairs = {
-      emerg: "128",
-      crit: "129",
-      alert: "130",
-      err: "131",
-      warn: "132",
-      notice: "133",
-      info: "134",
-      debug: "135",
-    };
-
-    for (const [name, sev] of Object.entries(expectPairs)) {
-      stmt[name]();
-      expect(stmt.toString("rfc5424")).toBe(`<${sev}> 1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
-    }
+    stmt[severity]();
+    expect(stmt.toString("rfc5424")).toBe(`<${expectPri}> 1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
   });
 
-  test("versionのバリデーション", () => {
+  test.for([
+    { invalidVersion: -1 },
+    { invalidVersion: 2 },
+    { invalidVersion: null },
+    { invalidVersion: undefined },
+  ])(`versionのバリデーション（invalidVersion: $invalidVersion）`, ({ invalidVersion }) => {
     const stmt = new SyslogStmt();
-    const testArgs = [-1, 2, null, undefined];
-    for (const invalidArg of testArgs) {
-      expect(() => stmt.ver(invalidArg)).toThrow(/Invalid version:/);
-    }
+
+    expect(() => stmt.ver(invalidVersion)).toThrow(/Invalid version:/);
   });
 
-  test("severityのバリデーション", () => {
+  test.for([
+    { invalidSeverity: -1 },
+    { invalidSeverity: 8 },
+    { invalidSeverity: null },
+    { invalidSeverity: undefined },
+    { invalidSeverity: "1" },
+    { invalidSeverity: "Emergency" },
+  ])("severityのバリデーション(invalidSeverity: $invalidSeverity)", ({ invalidSeverity }) => {
     const stmt = new SyslogStmt();
-    const testArgs = [-1, 8, null, undefined, "1", "Emergency"];
-    for (const invalidArg of testArgs) {
-      expect(() => stmt.sev(invalidArg)).toThrow(/Invalid severity:/);
-    }
+    expect(() => stmt.sev(invalidSeverity)).toThrow(/Invalid severity:/);
   });
 
-  test("facilityのバリデーション", () => {
+  test.for([
+    { invalidFacility: -1 },
+    { invalidFacility: 24 },
+    { invalidFacility: null },
+    { invalidFacility: undefined },
+    { invalidFacility: "kernel" },
+    { invalidFacility: "Local0" },
+  ])("facilityのバリデーション(invalidFacility: $invalidFacility)", ({ invalidFacility }) => {
     const stmt = new SyslogStmt();
-    const testArgs = [-1, 24, null, undefined, "kernel", "Local0"];
-    for (const invalidArg of testArgs) {
-      expect(() => stmt.fac(invalidArg)).toThrow(/Invalid facility:/);
-    }
+    expect(() => stmt.fac(invalidFacility)).toThrow(/Invalid facility:/);
   });
 
-  test("timestampのバリデーション", () => {
+  test.for([
+    { invalidTime: undefined },
+    { invalidTime: "test" },
+    { invalidTime: {} },
+  ])("timestampのバリデーション(invalidTime: $invalidTime)", ({ invalidTime }) => {
     const stmt = new SyslogStmt();
-    const testArgs = [undefined, "test", {}];
-    for (const invalidArg of testArgs) {
-      expect(() => stmt.time(invalidArg)).toThrow(/Invalid timestamp:/);
-    }
+    expect(() => stmt.time(invalidTime)).toThrow(/Invalid timestamp:/);
   });
 
-  test("hostnameのバリデーション", () => {
+  test.for([
+    { invalidHostname: "a".repeat(256) },
+    { invalidHostname: "ホスト名" },
+    { invalidHostname: 0 },
+  ])("hostnameのバリデーション(invalidHostname: $invalidHostname)", ({ invalidHostname }) => {
     const stmt = new SyslogStmt();
-    const longStr = "a".repeat(256);
-    const testArgs = [longStr, "ホストネーム", 0]
-    for (const invalidArg of testArgs) {
-      expect(() => stmt.host(invalidArg as any)).toThrow(/Invalid hostname:/);
-    }
+    expect(() => stmt.host(invalidHostname as any)).toThrow(/Invalid hostname:/);
   });
 
-  test("appnameのバリデーション", () => {
+  test.for([
+    { invalidAppname: "a".repeat(49) },
+    { invalidAppname: "アプリケーション名" },
+    { invalidAppname: 0 },
+  ])("appnameのバリデーション(invalidAppname: $invalidAppname)", ({ invalidAppname }) => {
     const stmt = new SyslogStmt();
-    const longStr = "a".repeat(49);
-    const testArgs = [longStr, "アプリケーション名", 0]
-    for (const invalidArg of testArgs) {
-      expect(() => stmt.app(invalidArg as any)).toThrow(/Invalid appname:/);
-    }
+    expect(() => stmt.app(invalidAppname as any)).toThrow(/Invalid appname:/);
   });
 
-  test("procIdのバリデーション", () => {
+  test.for([
+    { invalidProcId: "a".repeat(129) },
+    { invalidProcId: "プロセスID" },
+    { invalidProcId: 0 },
+  ])("procIdのバリデーション(invalidProcId: $invalidProcId)", ({ invalidProcId }) => {
     const stmt = new SyslogStmt();
-    const longStr = "a".repeat(129);
-    const testArgs = [longStr, "プロセスID", 0]
-    for (const invalidArg of testArgs) {
-      expect(() => stmt.proc(invalidArg as any)).toThrow(/Invalid procId:/);
-    }
+    expect(() => stmt.proc(invalidProcId as any)).toThrow(/Invalid procId:/);
   });
 
-  test("msgIdのバリデーション", () => {
+  test.for([
+    { invalidMsgId: "a".repeat(33) },
+    { invalidMsgId: "メッセージID" },
+    { invalidMsgId: 0 },
+  ])("msgIdのバリデーション(invalidMsgId: $invalidMsgId)", ({ invalidMsgId }) => {
     const stmt = new SyslogStmt();
-    const longStr = "a".repeat(33);
-    const testArgs = [longStr, "メッセージID", 0]
-    for (const invalidArg of testArgs) {
-      expect(() => stmt.msgId(invalidArg as any)).toThrow(/Invalid msgId:/);
-    }
+    expect(() => stmt.msgId(invalidMsgId as any)).toThrow(/Invalid msgId:/);
   });
 
-  test("sdのバリデーション", () => {
+  test.for([
+    { invalidSd: "--" },
+  ])("sdのバリデーション(invalidSd: $invalidSd)", ({ invalidSd }) => {
     const stmt = new SyslogStmt();
-    const testArgs = ["--"];
-    for (const invalidArg of testArgs) {
-      expect(() => stmt.sd(invalidArg)).toThrow(/Invalid structuredData:/);
-    }
+    expect(() => stmt.sd(invalidSd as any)).toThrow(/Invalid structuredData:/);
   });
 
   test("sevNumはsevStrの逆写像である", () => {
@@ -162,19 +168,29 @@ describe('SyslogStmt', () => {
     }
   });
 
-  test("制御文字エスケープ（TAB、LF、CRを除く）", () => {
-    const ctrls = ["\x00", "\x08", "\x0B", "\x0C", "\x0E", "\x1F", "\x7F", "\u200B", "\u200F", "\uFEFF", "\uFFFE", "\uFFFF"];
-    const escaped = ["\\x00", "\\x08", "\\x0B", "\\x0C", "\\x0E", "\\x1F", "\\x7F", "\\u200B", "\\u200F", "\\uFEFF", "\\uFFFE", "\\uFFFF"];
+  test.for([
+    { ctrl: "\x09", ret: "\t" },
+    { ctrl: "\x0A", ret: "\n" },
+    { ctrl: "\x0D", ret: "\r" },
+  ])(`制御文字をエスケープしない（TAB、LF、CR）ctrl ：$escaped`, ({ ctrl, ret }) => {
+    expect(SyslogStmt.escapeControlChars(ctrl)).toBe(ret);
+  });
 
-    expect(ctrls.length).toBe(escaped.length);
-    for (let i = 0; i < ctrls.length; i++) {
-      expect(SyslogStmt.escapeControlChars(ctrls[i])).toBe(escaped[i]);
-    }
-
-    const unscaped = ["\x09", "\x0A", "\x0D"];
-    for (const char of unscaped) {
-      expect(SyslogStmt.escapeControlChars(char)).toBe(char);
-    }
+  test.for([
+    { ctrl: "\x00", ret: "\\x00" },
+    { ctrl: "\x08", ret: "\\x08" },
+    { ctrl: "\x0B", ret: "\\x0B" },
+    { ctrl: "\x0C", ret: "\\x0C" },
+    { ctrl: "\x0E", ret: "\\x0E" },
+    { ctrl: "\x1F", ret: "\\x1F" },
+    { ctrl: "\x7F", ret: "\\x7F" },
+    { ctrl: "\u200B", ret: "\\u200B" },
+    { ctrl: "\u200F", ret: "\\u200F" },
+    { ctrl: "\uFEFF", ret: "\\uFEFF" },
+    { ctrl: "\uFFFE", ret: "\\uFFFE" },
+    { ctrl: "\uFFFF", ret: "\\uFFFF" },
+  ])(`制御文字をエスケープする（TAB、LF、CRを除く）ctrl ：$ret`, ({ ctrl, ret }) => {
+    expect(SyslogStmt.escapeControlChars(ctrl)).toBe(ret);
   });
 });
 

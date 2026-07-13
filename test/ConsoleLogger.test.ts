@@ -2,7 +2,7 @@ import { describe, test, expect, vi } from 'vitest';
 import { ConsoleLogger } from '../src/ConsoleLogger.js';
 import { SyslogStmt } from '../src/SyslogStmt.js';
 
-describe('Logger', () => {
+describe("ConsoleLoggerクラスのテスト", () => {
   test('内部的にはconsole.logを呼ぶ', () => {
     // console.log をスパイ（監視）する
     const spy = vi.spyOn(console, 'log').mockImplementation(() => { });
@@ -19,7 +19,7 @@ describe('Logger', () => {
     spy.mockRestore();
   });
 
-  test('各種設定ができる', () => {
+  test('ロガーを通じてSyslogStmtの各状態を設定できる', () => {
     const logger = new ConsoleLogger().level(6)
       .ver(0)
       .fac(20)
@@ -35,7 +35,16 @@ describe('Logger', () => {
     expect(stmt.toString("rfc5424")).toBe(`<161> 0 ${now.toISOString()} localhost suikyo testConsoleLogger test - ${BOM}test message`);
   });
 
-  test('ログレベルのメソッドは渡したインスタンスの設定を変更しない', () => {
+  test.for([
+    { severity: "emerg" },
+    { severity: "alert" },
+    { severity: "crit" },
+    { severity: "err" },
+    { severity: "warn" },
+    { severity: "notice" },
+    { severity: "info" },
+    { severity: "debug" },
+  ])(`重大度メソッドは渡したインスタンスの設定を変更しない（severity: $severity）`, ({ severity }) => {
     const logger = new ConsoleLogger()
       .ver(1)
       .fac(20)
@@ -46,14 +55,17 @@ describe('Logger', () => {
 
     const now = new Date();
     const stmt = logger.createSyslogStmt().time(now);
+
+    //コンソールに出力させないためのモック利用
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => { });
+
     stmt.sev(1);
+    logger.level(7);
+    logger[severity](stmt);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(stmt.toString("rfc5424")).toBe(`<161> 1 ${now.toISOString()} localhost suikyo testConsoleLogger test -`);
 
-    ["emerg", "alert", "crit", "err", "warn", "notice", "info", "debug"].forEach(test => {
-      const upper = test.charAt(0).toUpperCase() + test.slice(1);
-      logger[test](stmt);
-      expect(stmt.toString("rfc5424")).toBe(`<161> 1 ${now.toISOString()} localhost suikyo testConsoleLogger test -`);
-    });
-
+    spy.mockRestore();
   });
 
 });
