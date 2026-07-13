@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { SyslogStmt } from '../src/SyslogStmt.js';
 import { StructuredData } from '../src/StructuredData.js';
 
@@ -6,14 +6,14 @@ import { StructuredData } from '../src/StructuredData.js';
 const BOM = "\uFEFF";
 const testMessage = "test message";
 describe('SyslogStmt', () => {
-  it("simpleモードでの典型例", () => {
+  test("simpleモードでの典型例", () => {
     const time = new Date();
     const stmt = new SyslogStmt().gen(testMessage).time(time);
 
     expect(stmt.toString("simple")).toBe(`[Alert] ${time.toISOString()} test message`);
   });
 
-  it("rfc5424モードでの典型例", () => {
+  test("rfc5424モードでの典型例", () => {
     //以下のnowは次の時間のつもり：2026-07-13T23:08:19.423+09:00
     const now = 1783898419423
     const builder = new SyslogStmt();
@@ -29,7 +29,7 @@ describe('SyslogStmt', () => {
     expect(stmt.toString(undefined)).toBe(`<162> 1 2026-07-12T23:20:19.423Z localhost suikyo testSyslogStmt rfc5424 - ${BOM}test message`);
   });
 
-  it("rfc5424モードでの典型例(構造化データ付き)", () => {
+  test("rfc5424モードでの典型例(構造化データ付き)", () => {
     const now = new Date();
     const builder = new SyslogStmt();
     const sd = new StructuredData().add("testSdId", "testKey", "testValue");
@@ -44,7 +44,7 @@ describe('SyslogStmt', () => {
     expect(stmt.toString("rfc5424")).toBe(`<129> 1 ${now.toISOString()} - - - - ${sd.toString()} ${BOM}${testMessage}`);
   });
 
-  it("各重大度のメソッドはその重大度を設定する", () => {
+  test("各重大度のメソッドはその重大度を設定する", () => {
     const now = new Date();
     const stmt = new SyslogStmt().gen(testMessage).time(now);
 
@@ -68,7 +68,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("versionのバリデーション", () => {
+  test("versionのバリデーション", () => {
     const stmt = new SyslogStmt();
     const testArgs = [-1, 2, null, undefined];
     for (const invalidArg of testArgs) {
@@ -76,7 +76,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("severityのバリデーション", () => {
+  test("severityのバリデーション", () => {
     const stmt = new SyslogStmt();
     const testArgs = [-1, 8, null, undefined, "1", "Emergency"];
     for (const invalidArg of testArgs) {
@@ -84,7 +84,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("facilityのバリデーション", () => {
+  test("facilityのバリデーション", () => {
     const stmt = new SyslogStmt();
     const testArgs = [-1, 24, null, undefined, "kernel", "Local0"];
     for (const invalidArg of testArgs) {
@@ -92,7 +92,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("timestampのバリデーション", () => {
+  test("timestampのバリデーション", () => {
     const stmt = new SyslogStmt();
     const testArgs = [undefined, "test", {}];
     for (const invalidArg of testArgs) {
@@ -100,7 +100,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("hostnameのバリデーション", () => {
+  test("hostnameのバリデーション", () => {
     const stmt = new SyslogStmt();
     const longStr = "a".repeat(256);
     const testArgs = [longStr, "ホストネーム", 0]
@@ -109,7 +109,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("appnameのバリデーション", () => {
+  test("appnameのバリデーション", () => {
     const stmt = new SyslogStmt();
     const longStr = "a".repeat(49);
     const testArgs = [longStr, "アプリケーション名", 0]
@@ -118,7 +118,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("procIdのバリデーション", () => {
+  test("procIdのバリデーション", () => {
     const stmt = new SyslogStmt();
     const longStr = "a".repeat(129);
     const testArgs = [longStr, "プロセスID", 0]
@@ -127,7 +127,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("msgIdのバリデーション", () => {
+  test("msgIdのバリデーション", () => {
     const stmt = new SyslogStmt();
     const longStr = "a".repeat(33);
     const testArgs = [longStr, "メッセージID", 0]
@@ -136,7 +136,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("sdのバリデーション", () => {
+  test("sdのバリデーション", () => {
     const stmt = new SyslogStmt();
     const testArgs = ["--"];
     for (const invalidArg of testArgs) {
@@ -144,7 +144,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("sevNumはsevStrの逆写像である", () => {
+  test("sevNumはsevStrの逆写像である", () => {
     const sevNum = SyslogStmt.sevNum;
     const sevStr = SyslogStmt.sevStr;
     for (const [str, int] of Object.entries(sevNum)) {
@@ -153,7 +153,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("facNumはfacStrの逆写像である", () => {
+  test("facNumはfacStrの逆写像である", () => {
     const facNum = SyslogStmt.facNum;
     const facStr = SyslogStmt.facStr;
     for (const [str, int] of Object.entries(facNum)) {
@@ -162,7 +162,7 @@ describe('SyslogStmt', () => {
     }
   });
 
-  it("制御文字エスケープ（TAB、LF、CRを除く）", () => {
+  test("制御文字エスケープ（TAB、LF、CRを除く）", () => {
     const ctrls = ["\x00", "\x08", "\x0B", "\x0C", "\x0E", "\x1F", "\x7F", "\u200B", "\u200F", "\uFEFF", "\uFFFE", "\uFFFF"];
     const escaped = ["\\x00", "\\x08", "\\x0B", "\\x0C", "\\x0E", "\\x1F", "\\x7F", "\\u200B", "\\u200F", "\\uFEFF", "\\uFFFE", "\\uFFFF"];
 

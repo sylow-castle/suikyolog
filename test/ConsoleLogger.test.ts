@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { ConsoleLogger } from '../src/ConsoleLogger.js';
 import { SyslogStmt } from '../src/SyslogStmt.js';
 
 describe('Logger', () => {
-  it('内部的にはconsole.logを呼ぶ', () => {
+  test('内部的にはconsole.logを呼ぶ', () => {
     // console.log をスパイ（監視）する
     const spy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
@@ -19,7 +19,7 @@ describe('Logger', () => {
     spy.mockRestore();
   });
 
-  it('各種設定ができる', () => {
+  test('各種設定ができる', () => {
     const logger = new ConsoleLogger().level(6)
       .ver(0)
       .fac(20)
@@ -35,7 +35,7 @@ describe('Logger', () => {
     expect(stmt.toString("rfc5424")).toBe(`<161> 0 ${now.toISOString()} localhost suikyo testConsoleLogger test - ${BOM}test message`);
   });
 
-  it('ログレベルのメソッドは渡したインスタンスの設定を変更しない', () => {
+  test('ログレベルのメソッドは渡したインスタンスの設定を変更しない', () => {
     const logger = new ConsoleLogger()
       .ver(1)
       .fac(20)
