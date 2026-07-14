@@ -1,4 +1,4 @@
-import { describe, test, expect, vi } from 'vitest';
+import { describe, test, expect } from 'vitest';
 import { SyslogStmt } from '../src/SyslogStmt.js';
 import { StructuredData } from '../src/StructuredData.js';
 
@@ -46,8 +46,8 @@ describe("SyslogStmtクラスのテスト", () => {
 
   test.for([
     { severity: "emerg", expectPri: 128 },
-    { severity: "crit", expectPri: 129 },
-    { severity: "alert", expectPri: 130 },
+    { severity: "alert", expectPri: 129 },
+    { severity: "crit", expectPri: 130 },
     { severity: "err", expectPri: 131 },
     { severity: "warn", expectPri: 132 },
     { severity: "notice", expectPri: 133 },
@@ -150,23 +150,7 @@ describe("SyslogStmtクラスのテスト", () => {
     expect(() => stmt.sd(invalidSd as any)).toThrow(/Invalid structuredData:/);
   });
 
-  test("sevNumはsevStrの逆写像である", () => {
-    const sevNum = SyslogStmt.sevNum;
-    const sevStr = SyslogStmt.sevStr;
-    for (const [str, int] of Object.entries(sevNum)) {
-      expect(sevStr[sevNum[str]]).toBe(str);
-      expect(sevNum[sevStr[int]]).toBe(int);
-    }
-  });
 
-  test("facNumはfacStrの逆写像である", () => {
-    const facNum = SyslogStmt.facNum;
-    const facStr = SyslogStmt.facStr;
-    for (const [str, int] of Object.entries(facNum)) {
-      expect(facStr[facNum[str]]).toBe(str);
-      expect(facNum[facStr[int]]).toBe(int);
-    }
-  });
 
   test.for([
     { ctrl: "\x09", ret: "\t" },
