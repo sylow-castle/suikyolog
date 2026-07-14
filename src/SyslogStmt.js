@@ -3,104 +3,17 @@
  */
 
 import { StructuredData } from "./StructuredData.js";
+import * as Rule from "./Rfc5424Rule.js";
 
 export class SyslogStmt {
-  static get sevNum() {
-    return {
-      Emerg: 0,
-      Alert: 1,
-      Crit: 2,
-      Err: 3,
-      Warn: 4,
-      Notice: 5,
-      Info: 6,
-      Debug: 7,
-    };
-  }
-
-  static get sevStr() {
-    return [
-      "Emerg",
-      "Alert",
-      "Crit",
-      "Err",
-      "Warn",
-      "Notice",
-      "Info",
-      "Debug",
-    ];
-  }
-
-  static get facNum() {
-    return {
-      kern: 0,
-      user: 1,
-      mail: 2,
-      daemon: 3,
-      auth: 4,
-      syslog: 5,
-      lpr: 6,
-      news: 7,
-      uucp: 8,
-      cron: 9,
-      authpriv: 10,
-      ftp: 11,
-      ntp: 12,
-      audit: 13,
-      alert: 14,
-      clock: 15,
-      local0: 16,
-      local1: 17,
-      local2: 18,
-      local3: 19,
-      local4: 20,
-      local5: 21,
-      local6: 22,
-      local7: 23,
-    };
-  }
-
-  static get facStr() {
-    return [
-      "kern",
-      "user",
-      "mail",
-      "daemon",
-      "auth",
-      "syslog",
-      "lpr",
-      "news",
-      "uucp",
-      "cron",
-      "authpriv",
-      "ftp",
-      "ntp",
-      "audit",
-      "alert",
-      "clock",
-      "local0",
-      "local1",
-      "local2",
-      "local3",
-      "local4",
-      "local5",
-      "local6",
-      "local7",
-    ];
-  }
-  static sev = this.sevNum;
-  static get NILVALUE() {
-    return "-";
-  }
-
   #facility = 16;
   #severity = 1;
   #timestamp = new Date();
-  #version = 1;
-  #hostname = SyslogStmt.NILVALUE;
-  #appname = SyslogStmt.NILVALUE;
-  #procId = SyslogStmt.NILVALUE;
-  #msgId = SyslogStmt.NILVALUE;
+  #version = Rule.VERSION;
+  #hostname = Rule.NILVALUE;
+  #appname = Rule.NILVALUE;
+  #procId = Rule.NILVALUE;
+  #msgId = Rule.NILVALUE;
   #structuredData = new StructuredData();
   #msg = "";
 
@@ -109,7 +22,7 @@ export class SyslogStmt {
    * @returns {number}
    */
   get pri() {
-    return this.#facility * 8 + this.#severity;
+    return Rule.getPri(this.#facility, this.#severity);
   }
 
   /** 
@@ -146,33 +59,33 @@ export class SyslogStmt {
   }
 
   /**
-   * 重大度を設定する。
-   * @param {string | number} severity 
-   * @returns {SyslogStmt}
-   */
-  sev(severity) {
-    if (typeof severity === "string" && SyslogStmt.sevNum.hasOwnProperty(severity)) {
-      this.#severity = SyslogStmt.sevNum[severity];
-    } else if (Number.isInteger(severity) && 0 <= severity && severity <= 7) {
-      this.#severity = severity;
-    } else {
-      throw new Error(`Invalid severity: ${severity}`);
-    }
-    return this;
-  }
-
-  /**
    * ファシリティを設定する。
    * @param {string | number} facility 
    * @returns {SyslogStmt}
    */
   fac(facility) {
-    if (typeof facility === "string" && SyslogStmt.facNum.hasOwnProperty(facility)) {
-      this.#facility = SyslogStmt.facNum[facility];
+    if (typeof facility === "string" && Rule.FACILITY_NUM.hasOwnProperty(facility)) {
+      this.#facility = Rule.FACILITY_NUM[facility];
     } else if (Number.isInteger(facility) && 0 <= facility && facility <= 23) {
       this.#facility = facility;
     } else {
       throw new Error(`Invalid facility: ${facility}`);
+    }
+    return this;
+  }
+
+  /**
+   * 重大度を設定する。
+   * @param {string | number} severity 
+   * @returns {SyslogStmt}
+   */
+  sev(severity) {
+    if (typeof severity === "string" && Rule.SEVERITY_NUM.hasOwnProperty(severity)) {
+      this.#severity = Rule.SEVERITY_NUM[severity];
+    } else if (Number.isInteger(severity) && 0 <= severity && severity <= 7) {
+      this.#severity = severity;
+    } else {
+      throw new Error(`Invalid severity: ${severity}`);
     }
     return this;
   }
@@ -215,18 +128,14 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   host(hostname) {
-    const regExp = /^[\x21-\x7E]{1,255}$/;
     hostname = this.#nilOrString(hostname);
-    if (typeof hostname !== "string") {
+
+    if (Rule.isValidHostname(hostname)) {
+      this.#hostname = hostname;
+    } else {
       throw new Error(`Invalid hostname: ${hostname}`);
     }
 
-    if (!regExp.test(hostname) && hostname !== "-") {
-      throw new Error(`Invalid hostname: ${hostname}`);
-    }
-
-
-    this.#hostname = hostname;
     return this;
   }
 
@@ -236,17 +145,14 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   app(appname) {
-    const regExp = /^[\x21-\x7E]{1,48}$/;
     appname = this.#nilOrString(appname);
-    if (typeof appname !== "string") {
+
+    if (Rule.isValidAppName(appname)) {
+      this.#appname = appname;
+    } else {
       throw new Error(`Invalid appname: ${appname}`);
     }
 
-    if (!regExp.test(appname) && appname !== "-") {
-      throw new Error(`Invalid appname: ${appname}`);
-    }
-
-    this.#appname = appname;
     return this;
   }
 
@@ -256,17 +162,13 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   proc(procId) {
-    const regExp = /^[\x21-\x7E]{1,128}$/;
     procId = this.#nilOrString(procId);
-    if (typeof procId !== "string") {
+    if (Rule.isValidProcessId(procId)) {
+      this.#procId = procId;
+    } else {
       throw new Error(`Invalid procId: ${procId}`);
     }
 
-    if (!regExp.test(procId) && procId !== "-") {
-      throw new Error(`Invalid procId: ${procId}`);
-    }
-
-    this.#procId = procId;
     return this;
   }
 
@@ -276,17 +178,14 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   msgId(msgId) {
-    const regExp = /^[\x21-\x7E]{1,32}$/;
     msgId = this.#nilOrString(msgId);
-    if (typeof msgId !== "string") {
+
+    if (Rule.isValidMsgId(msgId)) {
+      this.#msgId = msgId;
+    } else {
       throw new Error(`Invalid msgId: ${msgId}`);
     }
 
-    if (!regExp.test(msgId) && msgId !== "-") {
-      throw new Error(`Invalid msgId: ${msgId}`);
-    }
-
-    this.#msgId = msgId;
     return this;
   }
 
@@ -300,7 +199,7 @@ export class SyslogStmt {
   sd(structuredData) {
     structuredData = this.#nilOrString(structuredData);
     if (typeof structuredData === 'string') {
-      if (structuredData !== SyslogStmt.NILVALUE) {
+      if (structuredData !== Rule.NILVALUE) {
         throw new Error(`Invalid structuredData: ${structuredData}`);
       }
       this.#structuredData = structuredData;
@@ -327,7 +226,7 @@ export class SyslogStmt {
    * @returns {string}
    */
   toSimple() {
-    const sevStr = this.constructor.sevStr[this.#severity] ?? "Unknown";
+    const sevStr = Rule.SEVERITY_STR[this.#severity] ?? "Unknown";
     return `[${sevStr}] ${this.#timestamp.toISOString()} ${this.#msg}`;
   }
 
@@ -350,7 +249,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   emerg() {
-    return this.sev(0);
+    return this.sev(Rule.SEVERITY_NUM.Emerg);
   }
 
   /**
@@ -358,7 +257,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   crit() {
-    return this.sev(1);
+    return this.sev(Rule.SEVERITY_NUM.Crit);
 
   }
 
@@ -367,7 +266,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   alert() {
-    return this.sev(2);
+    return this.sev(Rule.SEVERITY_NUM.Alert);
   }
 
   /**
@@ -375,7 +274,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   err() {
-    return this.sev(3);
+    return this.sev(Rule.SEVERITY_NUM.Err);
   }
 
   /**
@@ -383,7 +282,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   warn() {
-    return this.sev(4);
+    return this.sev(Rule.SEVERITY_NUM.Warn);
   }
 
   /**
@@ -391,7 +290,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   notice() {
-    return this.sev(5);
+    return this.sev(Rule.SEVERITY_NUM.Notice);
   }
 
   /**
@@ -399,7 +298,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   info() {
-    return this.sev(6);
+    return this.sev(Rule.SEVERITY_NUM.Info);
   }
 
   /**
@@ -407,7 +306,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   debug() {
-    return this.sev(7);
+    return this.sev(Rule.SEVERITY_NUM.Debug);
   }
 
   /**
@@ -453,7 +352,7 @@ export class SyslogStmt {
   #header() {
     const timestamp = this.#timestamp instanceof Date
       ? this.#timestamp.toISOString()
-      : SyslogStmt.NILVALUE;
+      : Rule.NILVALUE;
 
     return `<${this.pri}> ${this.#version} ${timestamp} ${this.#hostname} ${this.#appname} ${this.#procId} ${this.#msgId}`;
   }
@@ -466,7 +365,7 @@ export class SyslogStmt {
   #nilOrString(src) {
     let result = src ?? "";
     if (result === "") {
-      result = SyslogStmt.NILVALUE;
+      result = Rule.NILVALUE;
     }
     return result;
   }

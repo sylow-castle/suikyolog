@@ -1,4 +1,5 @@
 import { SyslogStmt } from "./SyslogStmt.js";
+import * as Rfc5424Rule from "./Rfc5424Rule.js";
 
 export class StructuredData {
   #elements = new Map(); // Map<SDID, Map<Key, Value>>
@@ -102,30 +103,33 @@ export class StructuredData {
 
   toString() {
     if (this.#elements.size === 0) {
-      return SyslogStmt.NILVALUE;
+      return Rfc5424Rule.NILVALUE;
     }
 
-    let res = "";
+    let res = [];
+
     for (const [sdId, params] of this.#elements) {
-      res += `[${sdId}`;
+      const paramStrings = [];
       for (const [k, v] of params) {
-        res += ` ${k}="${v}"`;
+        paramStrings.push(` ${k}="${v}"`);
       }
-      res += "]";
+      const sdParamas = paramStrings.join("");
+
+      res.push(`[${sdId}${sdParamas}]`);
     }
-    return res;
+    return res.join("");
   }
 
   #validateSDName(name) {
     // 禁止文字のチェック
-    if (/[=\]"\s]/.test(name)) {
+    if (Rfc5424Rule.hasSdNameExceptions(name)) {
       throw new Error(`SD-NAME has not allowed chars: ${name}`);
     }
-
-    // 長さのチェック
-    if (!/^[\x21-\x7E]{1,32}$/.test(name)) {
+    // 長さと文字種のチェック
+    if (!(Rfc5424Rule.isValidSdName(name))) {
       throw new Error(`SD-NAME is 1-32 length: ${name}`);
     }
+
     return true;
   }
 }

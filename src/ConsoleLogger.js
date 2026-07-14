@@ -1,22 +1,39 @@
 import { SyslogStmt } from "./SyslogStmt.js";
+import { FACILITY_NUM, SEVERITY_NUM } from "./Rfc5424Rule.js";
+
+const LOG_LEVELS = Object.freeze([
+  "emerg",
+  "alert",
+  "crit",
+  "err",
+  "warn",
+  "notice",
+  "info",
+  "debug",
+]);
+
+const FORMAT = Object.freeze({
+  simple: "simple",
+  rfc5424: "rfc5424",
+});
 
 export class ConsoleLogger {
   #level = 1;
   #template = new SyslogStmt();
 
   constructor() {
-    ['emerg', 'alert', 'crit', 'err', 'warn', 'notice', 'info', 'debug'].forEach(level => {
+    for (const level of LOG_LEVELS) {
       this[level] = (syslogStmt) => {
         const upper = level.charAt(0).toUpperCase() + level.slice(1)
         const finalStmt = syslogStmt.clone().sev(upper);
-        this.log(finalStmt, "rfc5424");
+        this.log(finalStmt, FORMAT.rfc5424);
         return this;
       };
-    });
+    }
   }
   /**
    * このロガーの設定を元にSyslogStmtを設定、生成する
-   * @returns {SyslogStmt} 設定済みのSyslogStmt
+   * @returns { SyslogStmt } 設定済みのSyslogStmt
    */
   createSyslogStmt() {
     return this.#template.clone();
@@ -27,7 +44,7 @@ export class ConsoleLogger {
    * @returns {ConsoleLogger}
    */
   level(level) {
-    if (Number.isInteger(level) && SyslogStmt.sevNum.Emerg <= level && level <= SyslogStmt.sevNum.Debug) {
+    if (Number.isInteger(level) && SEVERITY_NUM.Emerg <= level && level <= SEVERITY_NUM.Debug) {
       this.#level = level;
     } else {
       throw new Error(`Invalid level: ${level}`);
@@ -104,7 +121,7 @@ export class ConsoleLogger {
    * @param {SyslogStmt} syslogStmt 
    * @param {LogFormat | undefined} format 省略時はsimple" 
    */
-  log(syslogStmt, format = "simple") {
+  log(syslogStmt, format = FORMAT.simple) {
     if (syslogStmt.isOutput(this.#level)) {
       console.log(syslogStmt.toString(format));
     }
