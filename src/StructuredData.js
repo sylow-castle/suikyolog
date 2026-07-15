@@ -1,9 +1,12 @@
-import { SyslogStmt } from "./SyslogStmt.js";
 import * as Rfc5424Rule from "./Rfc5424Rule.js";
 
 export class StructuredData {
   #elements = new Map(); // Map<SDID, Map<Key, Value>>
   #currentSdId = null;
+
+  get element() {
+    return this.#elements;
+  }
 
   /**
    * 構造化データにキーと値のペアを追加する。
@@ -47,7 +50,7 @@ export class StructuredData {
 
     this.#validateSDName(sdId);
     this.#validateSDName(key);
-    value = SyslogStmt.escapeControlChars(this.#escape(value));
+    value = Rfc5424Rule.escapeParamValue(value);
 
     // 状態の更新
     this.#currentSdId = sdId;
@@ -95,29 +98,7 @@ export class StructuredData {
   }
 
   #escape(val) {
-    // ], ", \ をエスケープする処理
-    return String(val).replace(/\\/g, '\\\\')
-      .replace(/"/g, '\\"')
-      .replace(/]/g, '\\]');
-  }
 
-  toString() {
-    if (this.#elements.size === 0) {
-      return Rfc5424Rule.NILVALUE;
-    }
-
-    let res = [];
-
-    for (const [sdId, params] of this.#elements) {
-      const paramStrings = [];
-      for (const [k, v] of params) {
-        paramStrings.push(` ${k}="${v}"`);
-      }
-      const sdParamas = paramStrings.join("");
-
-      res.push(`[${sdId}${sdParamas}]`);
-    }
-    return res.join("");
   }
 
   #validateSDName(name) {

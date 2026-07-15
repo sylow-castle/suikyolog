@@ -154,3 +154,10 @@ export function isValidSdName(sdname) {
 export function hasSdNameExceptions(sdname) {
   return SDNAME_EXCEPTIONS.test(sdname);
 }
+
+export function escapeParamValue(value) {
+  // ], ", \ をエスケープする処理
+  return String(value).replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/]/g, '\\]');
+}

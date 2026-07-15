@@ -1,5 +1,8 @@
 import { SyslogStmt } from "./SyslogStmt.js";
+import { SyslogEncoder } from "./SyslogEncoder.js"
+import { SimpleEncoder } from "./SimpleEncoder.js";
 import { FACILITY_NUM, SEVERITY_NUM } from "./Rfc5424Rule.js";
+import { Encoder } from "./Encoder.js";
 
 const LOG_LEVELS = Object.freeze([
   "emerg",
@@ -13,20 +16,21 @@ const LOG_LEVELS = Object.freeze([
 ]);
 
 const FORMAT = Object.freeze({
-  simple: "simple",
-  rfc5424: "rfc5424",
+  simple: new SimpleEncoder(),
+  rfc5424: new SyslogEncoder()
 });
 
 export class ConsoleLogger {
   #level = 1;
   #template = new SyslogStmt();
+  #encoder = FORMAT.simple;
 
   constructor() {
     for (const level of LOG_LEVELS) {
       this[level] = (syslogStmt) => {
         const upper = level.charAt(0).toUpperCase() + level.slice(1)
         const finalStmt = syslogStmt.clone().sev(upper);
-        this.log(finalStmt, FORMAT.rfc5424);
+        this.log(finalStmt);
         return this;
       };
     }
@@ -113,17 +117,25 @@ export class ConsoleLogger {
   }
 
   /**
-   * @typedef { 'simple' | 'rfc5424' } LogFormat 
+   * @param {Encoder} encoder 
+   * @returns {ConsoleLogger}
    */
+  encoder(encoder) {
+    if (encoder instanceof Encoder) {
+      this.#encoder = encoder;
+    } else {
+      throw new Error(`Invalid encoder: ${encoder}`);
+    }
+    return this;
+  }
 
   /**
    * syslogStmtをこのロガーの設定でSyslogStmtを生成し、ログを出力する。
    * @param {SyslogStmt} syslogStmt 
-   * @param {LogFormat | undefined} format 省略時はsimple" 
    */
-  log(syslogStmt, format = FORMAT.simple) {
+  log(syslogStmt) {
     if (syslogStmt.isOutput(this.#level)) {
-      console.log(syslogStmt.toString(format));
+      console.log(this.#encoder.encode(syslogStmt));
     }
   }
 

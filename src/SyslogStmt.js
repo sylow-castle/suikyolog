@@ -6,8 +6,8 @@ import { StructuredData } from "./StructuredData.js";
 import * as Rule from "./Rfc5424Rule.js";
 
 export class SyslogStmt {
-  #facility = 16;
-  #severity = 1;
+  #facility = Rule.FACILITY_NUM.local0;
+  #severity = Rule.SEVERITY_NUM.Alert;
   #timestamp = new Date();
   #version = Rule.VERSION;
   #hostname = Rule.NILVALUE;
@@ -52,7 +52,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   clone() {
-    const result = this.gen();
+    const result = this.gen(this.#msg);
     result.#structuredData = this.#structuredData;
     result.#timestamp = this.#timestamp;
     return result;
@@ -105,6 +105,14 @@ export class SyslogStmt {
   }
 
   /**
+   * バージョン番号を取得する
+   * @returns {string}
+   */
+  get version() {
+    return this.#version.toString();
+  }
+
+  /**
    * タイムスタンプを設定する。現在時刻はログ生成時に自動設定される。
    * 引数がDate型の場合はそのインスタンスを使用、そうでない場合はDateコンストラクタに渡す。
    * @param {*} timestamp 
@@ -120,6 +128,14 @@ export class SyslogStmt {
       }
     }
     return this;
+  }
+
+  /**
+   * タイムスタンプを取得する
+   * @returns {Date}
+   */
+  get timestamp() {
+    return this.#timestamp;
   }
 
   /**
@@ -140,6 +156,14 @@ export class SyslogStmt {
   }
 
   /**
+   * ホスト名を取得する。
+   * @returns {string}
+   */
+  get hostname() {
+    return this.#hostname;
+  }
+
+  /**
    * アプリケーション名を設定する。
    * @param {string} appname 空文字、null、undefined を与えられると、NILVALUEとして解釈します。
    * @returns {SyslogStmt}
@@ -157,6 +181,14 @@ export class SyslogStmt {
   }
 
   /**
+   * アプリケーション名を取得する。
+   * @returns {string}
+   */
+  get appname() {
+    return this.#appname;
+  }
+
+  /**
    * プロセスIDを設定する。
    * @param {string} procId 空文字、null、undefined を与えられると、NILVALUEとして解釈します。
    * @returns {SyslogStmt}
@@ -170,6 +202,14 @@ export class SyslogStmt {
     }
 
     return this;
+  }
+
+  /**
+   * プロセスIDを取得する。
+   * @returns {string}
+   */
+  get procId() {
+    return this.#procId;
   }
 
   /**
@@ -190,6 +230,14 @@ export class SyslogStmt {
   }
 
   /**
+   * メッセージIDを取得する。
+   * @returns {string}
+   */
+  get messageId() {
+    return this.#msgId;
+  }
+
+  /**
    * 引数で指定した構造化データを設定する。
    * 文字列が渡された場合は、そのまま設定する。
    * StructuredDataが渡された場合は、toString()を実行してから設定する。
@@ -204,7 +252,7 @@ export class SyslogStmt {
       }
       this.#structuredData = structuredData;
     } else if (structuredData instanceof StructuredData) {
-      this.#structuredData = structuredData.toString();
+      this.#structuredData = structuredData;
     } else {
       throw new Error(`Invalid structuredData: ${structuredData}`);
     }
@@ -213,36 +261,20 @@ export class SyslogStmt {
   }
 
   /**
-   * RFC5424形式でログを出力する。
+   * 構造化データを取得する。
    * @returns {string}
    */
-  toRFC5424() {
-    const msg = this.#msg ? " ".concat("\uFEFF", this.#msg) : "";
-    return `${this.#header()} ${this.#structuredData.toString()}${msg}`;
+  get structuredData() {
+    return this.#structuredData;
   }
 
   /**
-   * [重大度] タイムスタンプ メッセージの形式でログを出力する
+   * メッセージを取得する。
    * @returns {string}
    */
-  toSimple() {
-    const sevStr = Rule.SEVERITY_STR[this.#severity] ?? "Unknown";
-    return `[${sevStr}] ${this.#timestamp.toISOString()} ${this.#msg}`;
+  get msg() {
+    return this.#msg;
   }
-
-  /**
-   * ログの出力形式を指定して出力する
-   * @param { "rfc5424" | "simple" } format 
-   * @returns {string}
-   */
-  toString(format) {
-    if (format === "simple") {
-      return this.toSimple();
-    }
-    return this.toRFC5424();
-  }
-
-  get str() { return this.toRFC5424() };
 
   /**
    * ログレベルをemergに設定する。
@@ -318,44 +350,6 @@ export class SyslogStmt {
     return this.#severity <= level;
   }
 
-  /**
-   * ログのメッセージ中の制御文字をエスケープする。
-   * 対象：ANSI制御文字の0x00-0x1F (LF:0x0A, TAB:0x09 を除く) および 0x7F
-   *      UTF8の\u200B-\u200F、\uFEFF\uFFFE\uFFFF
-   * 例："h\x00\u200B\uFEFFtest" -> "h\\x00\\u200B\\uFEFFtest"
-   * @param {string} str 
-   * @returns {string}
-   */
-  static escapeControlChars(str) {
-    // 0x00-0x1F (TAB:0x09,LF:0x0A,CR:0x0D を除く) および 0x7F を対象にする
-    // \x00-\x08: NUL～BS
-    // \x0B-\x0C: VT, FF
-    // \x0E-\x1F: SO～US
-    // \x7F: DEL
-    // \u200B-\u200F,\uFEFF, \uFFFE, \uFFFF：非文字
-    return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u200B-\u200F\uFEFF\uFFFE\uFFFF]/g, (match) => {
-      const char = match.charCodeAt(0);
-      if (char <= 127) {
-        const code = char.toString(16).toUpperCase().padStart(2, '0');
-        return `\\x${code}`;
-      } else {
-        const code = char.toString(16).toUpperCase().padStart(4, '0');
-        return `\\u${code}`;
-      }
-    });
-  }
-
-  /**
-   * ヘッダーを生成する。
-   * @returns {string}
-   */
-  #header() {
-    const timestamp = this.#timestamp instanceof Date
-      ? this.#timestamp.toISOString()
-      : Rule.NILVALUE;
-
-    return `<${this.pri}> ${this.#version} ${timestamp} ${this.#hostname} ${this.#appname} ${this.#procId} ${this.#msgId}`;
-  }
 
   /**
    * undefined, null, 空文字を NILVALUE("-") に置換する
@@ -369,7 +363,4 @@ export class SyslogStmt {
     }
     return result;
   }
-
-
-
 }
