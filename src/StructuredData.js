@@ -97,10 +97,6 @@ export class StructuredData {
     return this;
   }
 
-  #escape(val) {
-
-  }
-
   #validateSDName(name) {
     // 禁止文字のチェック
     if (Rfc5424Rule.hasSdNameExceptions(name)) {
