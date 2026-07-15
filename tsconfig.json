@@ -6,6 +6,11 @@
         "checkJs": false, // 本番JSファイルの型チェックはしない（必要ならtrueに）
         "moduleResolution": "node",
         "esModuleInterop": true,
-        "skipLibCheck": true
-    }
+        "skipLibCheck": true,
+        "noEmit": true
+    },
+    "exclude": [
+        "node_modules",
+        "coverage"
+    ]
 }
