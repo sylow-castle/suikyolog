@@ -3,17 +3,17 @@
  */
 
 import { StructuredData } from "./StructuredData.js";
-import * as Rule from "./Rfc5424Rule.js";
+import * as Rfc5424Rule from "./Rfc5424Rule.js";
 
 export class SyslogStmt {
-  #facility = Rule.FACILITY_NUM.local0;
-  #severity = Rule.SEVERITY_NUM.Alert;
+  #facility = Rfc5424Rule.FACILITY_NUM.local0;
+  #severity = Rfc5424Rule.SEVERITY_NUM.Alert;
   #timestamp = new Date();
-  #version = Rule.VERSION;
-  #hostname = Rule.NILVALUE;
-  #appname = Rule.NILVALUE;
-  #procId = Rule.NILVALUE;
-  #msgId = Rule.NILVALUE;
+  #version = Rfc5424Rule.VERSION;
+  #hostname = Rfc5424Rule.NILVALUE;
+  #appname = Rfc5424Rule.NILVALUE;
+  #procId = Rfc5424Rule.NILVALUE;
+  #msgId = Rfc5424Rule.NILVALUE;
   #structuredData = new StructuredData();
   #msg = "";
 
@@ -22,7 +22,7 @@ export class SyslogStmt {
    * @returns {number}
    */
   get pri() {
-    return Rule.getPri(this.#facility, this.#severity);
+    return Rfc5424Rule.getPri(this.#facility, this.#severity);
   }
 
   /** 
@@ -64,8 +64,8 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   fac(facility) {
-    if (typeof facility === "string" && Rule.FACILITY_NUM.hasOwnProperty(facility)) {
-      this.#facility = Rule.FACILITY_NUM[facility];
+    if (typeof facility === "string" && Rfc5424Rule.FACILITY_NUM.hasOwnProperty(facility)) {
+      this.#facility = Rfc5424Rule.FACILITY_NUM[facility];
     } else if (Number.isInteger(facility) && 0 <= facility && facility <= 23) {
       this.#facility = facility;
     } else {
@@ -80,8 +80,8 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   sev(severity) {
-    if (typeof severity === "string" && Rule.SEVERITY_NUM.hasOwnProperty(severity)) {
-      this.#severity = Rule.SEVERITY_NUM[severity];
+    if (typeof severity === "string" && Rfc5424Rule.SEVERITY_NUM.hasOwnProperty(severity)) {
+      this.#severity = Rfc5424Rule.SEVERITY_NUM[severity];
     } else if (Number.isInteger(severity) && 0 <= severity && severity <= 7) {
       this.#severity = severity;
     } else {
@@ -146,7 +146,7 @@ export class SyslogStmt {
   host(hostname) {
     hostname = this.#nilOrString(hostname);
 
-    if (Rule.isValidHostname(hostname)) {
+    if (Rfc5424Rule.isValidHostname(hostname)) {
       this.#hostname = hostname;
     } else {
       throw new Error(`Invalid hostname: ${hostname}`);
@@ -171,7 +171,7 @@ export class SyslogStmt {
   app(appname) {
     appname = this.#nilOrString(appname);
 
-    if (Rule.isValidAppName(appname)) {
+    if (Rfc5424Rule.isValidAppName(appname)) {
       this.#appname = appname;
     } else {
       throw new Error(`Invalid appname: ${appname}`);
@@ -195,7 +195,7 @@ export class SyslogStmt {
    */
   proc(procId) {
     procId = this.#nilOrString(procId);
-    if (Rule.isValidProcessId(procId)) {
+    if (Rfc5424Rule.isValidProcessId(procId)) {
       this.#procId = procId;
     } else {
       throw new Error(`Invalid procId: ${procId}`);
@@ -220,7 +220,7 @@ export class SyslogStmt {
   msgId(msgId) {
     msgId = this.#nilOrString(msgId);
 
-    if (Rule.isValidMsgId(msgId)) {
+    if (Rfc5424Rule.isValidMsgId(msgId)) {
       this.#msgId = msgId;
     } else {
       throw new Error(`Invalid msgId: ${msgId}`);
@@ -247,7 +247,7 @@ export class SyslogStmt {
   sd(structuredData) {
     structuredData = this.#nilOrString(structuredData);
     if (typeof structuredData === 'string') {
-      if (structuredData !== Rule.NILVALUE) {
+      if (structuredData !== Rfc5424Rule.NILVALUE) {
         throw new Error(`Invalid structuredData: ${structuredData}`);
       }
       this.#structuredData = structuredData;
@@ -281,7 +281,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   emerg() {
-    return this.sev(Rule.SEVERITY_NUM.Emerg);
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Emerg);
   }
 
   /**
@@ -289,7 +289,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   crit() {
-    return this.sev(Rule.SEVERITY_NUM.Crit);
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Crit);
 
   }
 
@@ -298,7 +298,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   alert() {
-    return this.sev(Rule.SEVERITY_NUM.Alert);
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Alert);
   }
 
   /**
@@ -306,7 +306,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   err() {
-    return this.sev(Rule.SEVERITY_NUM.Err);
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Err);
   }
 
   /**
@@ -314,7 +314,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   warn() {
-    return this.sev(Rule.SEVERITY_NUM.Warn);
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Warn);
   }
 
   /**
@@ -322,7 +322,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   notice() {
-    return this.sev(Rule.SEVERITY_NUM.Notice);
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Notice);
   }
 
   /**
@@ -330,7 +330,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   info() {
-    return this.sev(Rule.SEVERITY_NUM.Info);
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Info);
   }
 
   /**
@@ -338,7 +338,7 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   debug() {
-    return this.sev(Rule.SEVERITY_NUM.Debug);
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Debug);
   }
 
   /**
@@ -359,7 +359,7 @@ export class SyslogStmt {
   #nilOrString(src) {
     let result = src ?? "";
     if (result === "") {
-      result = Rule.NILVALUE;
+      result = Rfc5424Rule.NILVALUE;
     }
     return result;
   }

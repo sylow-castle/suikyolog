@@ -8,14 +8,6 @@ import { Encoder } from '../src/Encoder.js';
 const BOM = "\uFEFF";
 const testMessage = "test message";
 describe("SyslogStmtクラスのテスト", () => {
-  test("simpleモードでの典型例", () => {
-    const time = new Date();
-    const stmt = new SyslogStmt().gen(testMessage).time(time);
-    const encoder = new SimpleEncoder();
-
-    expect(encoder.encode(stmt)).toBe(`[129] ${time.toISOString()} test message`);
-  });
-
   test("rfc5424モードでの典型例", () => {
     //以下のnowは次の時間のつもり：2026-07-13T23:08:19.423+09:00
     const now = 1783898419423

@@ -15,15 +15,10 @@ const LOG_LEVELS = Object.freeze([
   "debug",
 ]);
 
-const FORMAT = Object.freeze({
-  simple: new SimpleEncoder(),
-  rfc5424: new SyslogEncoder()
-});
-
 export class ConsoleLogger {
   #level = 1;
   #template = new SyslogStmt();
-  #encoder = FORMAT.simple;
+  #encoder = new SyslogEncoder();
 
   constructor() {
     for (const level of LOG_LEVELS) {
@@ -117,6 +112,7 @@ export class ConsoleLogger {
   }
 
   /**
+   * エンコーダ（ログの出力書式）を設定する。
    * @param {Encoder} encoder 
    * @returns {ConsoleLogger}
    */

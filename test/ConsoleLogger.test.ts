@@ -3,6 +3,7 @@ import { ConsoleLogger } from '../src/ConsoleLogger.js';
 import { SyslogStmt } from '../src/SyslogStmt.js';
 import { SimpleEncoder } from '../src/SimpleEncoder.js';
 import { SyslogEncoder } from '../src/SyslogEncoder.js';
+import { SEVERITY_NUM } from '../src/Rfc5424Rule.js';
 
 describe("ConsoleLoggerクラスのテスト", () => {
   test('内部的にはconsole.logを呼ぶ', () => {
@@ -63,8 +64,8 @@ describe("ConsoleLoggerクラスのテスト", () => {
     //コンソールに出力させないためのモック利用
     const spy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
-    stmt.sev(1);
-    logger.level(7);
+    stmt.sev(SEVERITY_NUM.Alert);
+    logger.level(SEVERITY_NUM.Debug);
     logger[severity](stmt);
     const encoder = new SyslogEncoder();
     expect(spy).toHaveBeenCalledTimes(1);
