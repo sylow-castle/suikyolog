@@ -1,7 +1,9 @@
 import { describe, test, expect } from 'vitest';
 import { SyslogStmt } from '../src/SyslogStmt.js';
 import { StructuredData } from '../src/StructuredData.js';
-
+import { SyslogEncoder, StructureDataEncoder } from '../src/SyslogEncoder.js';
+import { SimpleEncoder } from '../src/SimpleEncoder.js';
+import { Encoder } from '../src/Encoder.js';
 
 const BOM = "\uFEFF";
 const testMessage = "test message";
@@ -9,8 +11,9 @@ describe("SyslogStmtクラスのテスト", () => {
   test("simpleモードでの典型例", () => {
     const time = new Date();
     const stmt = new SyslogStmt().gen(testMessage).time(time);
+    const encoder = new SimpleEncoder();
 
-    expect(stmt.toString("simple")).toBe(`[Alert] ${time.toISOString()} test message`);
+    expect(encoder.encode(stmt)).toBe(`[129] ${time.toISOString()} test message`);
   });
 
   test("rfc5424モードでの典型例", () => {
@@ -25,8 +28,9 @@ describe("SyslogStmtクラスのテスト", () => {
       .app("suikyo")
       .proc("testSyslogStmt")
       .msgId("rfc5424")
+    const encoder = new SyslogEncoder();
 
-    expect(stmt.toString(undefined)).toBe(`<162> 1 2026-07-12T23:20:19.423Z localhost suikyo testSyslogStmt rfc5424 - ${BOM}test message`);
+    expect(encoder.encode(stmt)).toBe(`<162> 1 2026-07-12T23:20:19.423Z localhost suikyo testSyslogStmt rfc5424 - ${BOM}test message`);
   });
 
   test("rfc5424モードでの典型例(構造化データ付き)", () => {
@@ -40,8 +44,11 @@ describe("SyslogStmtクラスのテスト", () => {
       .proc(undefined)
       .msgId(undefined)
       .sd(sd);
+    const encoder = new SyslogEncoder();
+    const sdEncoder = new StructureDataEncoder();
+    const sdStr = sdEncoder.encode(sd);
 
-    expect(stmt.toString("rfc5424")).toBe(`<129> 1 ${now.toISOString()} - - - - ${sd.toString()} ${BOM}${testMessage}`);
+    expect(encoder.encode(stmt)).toBe(`<129> 1 ${now.toISOString()} - - - - ${sdStr} ${BOM}${testMessage}`);
   });
 
   test.for([
@@ -56,11 +63,12 @@ describe("SyslogStmtクラスのテスト", () => {
   ])(`重大度メソッドはその重大度に設定する（severity: $severity）`, ({ severity, expectPri }) => {
     const now = new Date();
     const stmt = new SyslogStmt().gen(testMessage).time(now);
+    const encoder = new SyslogEncoder();
 
     //初期値は重大度1
-    expect(stmt.toString("rfc5424")).toBe(`<129> 1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
+    expect(encoder.encode(stmt)).toBe(`<129> 1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
     stmt[severity]();
-    expect(stmt.toString("rfc5424")).toBe(`<${expectPri}> 1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
+    expect(encoder.encode(stmt)).toBe(`<${expectPri}> 1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
   });
 
   test.for([
@@ -157,7 +165,7 @@ describe("SyslogStmtクラスのテスト", () => {
     { ctrl: "\x0A", ret: "\n" },
     { ctrl: "\x0D", ret: "\r" },
   ])(`制御文字をエスケープしない（TAB、LF、CR）ctrl ：$escaped`, ({ ctrl, ret }) => {
-    expect(SyslogStmt.escapeControlChars(ctrl)).toBe(ret);
+    expect(Encoder.escapeControlChars(ctrl)).toBe(ret);
   });
 
   test.for([
@@ -174,7 +182,7 @@ describe("SyslogStmtクラスのテスト", () => {
     { ctrl: "\uFFFE", ret: "\\uFFFE" },
     { ctrl: "\uFFFF", ret: "\\uFFFF" },
   ])(`制御文字をエスケープする（TAB、LF、CRを除く）ctrl ：$ret`, ({ ctrl, ret }) => {
-    expect(SyslogStmt.escapeControlChars(ctrl)).toBe(ret);
+    expect(Encoder.escapeControlChars(ctrl)).toBe(ret);
   });
 });
 

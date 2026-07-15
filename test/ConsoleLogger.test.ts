@@ -1,6 +1,8 @@
 import { describe, test, expect, vi } from 'vitest';
 import { ConsoleLogger } from '../src/ConsoleLogger.js';
 import { SyslogStmt } from '../src/SyslogStmt.js';
+import { SimpleEncoder } from '../src/SimpleEncoder.js';
+import { SyslogEncoder } from '../src/SyslogEncoder.js';
 
 describe("ConsoleLoggerクラスのテスト", () => {
   test('内部的にはconsole.logを呼ぶ', () => {
@@ -11,11 +13,12 @@ describe("ConsoleLoggerクラスのテスト", () => {
     const time = new Date();
     const stmt = new SyslogStmt().gen(`test message`).time(time);
 
-    logger.log(stmt, "simple")
+    logger.encoder(new SimpleEncoder());
+    logger.log(stmt);
 
-    expect(spy).toHaveBeenCalledWith(expect.stringContaining(`[Alert] ${time.toISOString()} test message`));
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining(`[129] ${time.toISOString()} test message`));
 
-    // 後始末
+    // 後始末 
     spy.mockRestore();
   });
 
@@ -30,9 +33,10 @@ describe("ConsoleLoggerクラスのテスト", () => {
 
     const now = new Date()
     const stmt = logger.createSyslogStmt().gen(`test message`).time(now);
+    const encoder = new SyslogEncoder();
     const BOM = "\uFEFF";
 
-    expect(stmt.toString("rfc5424")).toBe(`<161> 0 ${now.toISOString()} localhost suikyo testConsoleLogger test - ${BOM}test message`);
+    expect(encoder.encode(stmt)).toBe(`<161> 0 ${now.toISOString()} localhost suikyo testConsoleLogger test - ${BOM}test message`);
   });
 
   test.for([
@@ -62,8 +66,9 @@ describe("ConsoleLoggerクラスのテスト", () => {
     stmt.sev(1);
     logger.level(7);
     logger[severity](stmt);
+    const encoder = new SyslogEncoder();
     expect(spy).toHaveBeenCalledTimes(1);
-    expect(stmt.toString("rfc5424")).toBe(`<161> 1 ${now.toISOString()} localhost suikyo testConsoleLogger test -`);
+    expect(encoder.encode(stmt)).toBe(`<161> 1 ${now.toISOString()} localhost suikyo testConsoleLogger test -`);
 
     spy.mockRestore();
   });
