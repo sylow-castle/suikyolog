@@ -23,6 +23,29 @@ describe("ConsoleLoggerクラスのテスト", () => {
     spy.mockRestore();
   });
 
+  test('トランスポート層でエラーが発生した場合登録していたエラーハンドラーを呼び出す', async () => {
+    const spy = vi.spyOn(console, 'log')
+      .mockImplementation(() => { throw new Error('console log error') });
+
+    const logger = new ConsoleLogger().level(7).fac(20);
+    const errorHandler = vi.fn()
+    logger.onError(errorHandler)
+    const stmt = new SyslogStmt().emerg().gen(`test message`);
+
+    logger.log(stmt);
+    await vi.waitFor(() => {
+      expect(errorHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "console log error"
+        })
+      );
+
+    })
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+
+  });
+
   test('ロガーを通じてSyslogStmtの各状態を設定できる', () => {
     const logger = new ConsoleLogger().level(6)
       .ver(0)
