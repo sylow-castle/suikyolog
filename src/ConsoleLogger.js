@@ -1,8 +1,10 @@
 import { SyslogStmt } from "./SyslogStmt.js";
 import { SyslogEncoder } from "./SyslogEncoder.js"
 import { SimpleEncoder } from "./SimpleEncoder.js";
+import { ConsoleTransporter } from "./ConsoleTransporter.js";
 import { FACILITY_NUM, SEVERITY_NUM } from "./Rfc5424Rule.js";
 import { Encoder } from "./Encoder.js";
+
 
 const LOG_LEVELS = Object.freeze([
   "emerg",
@@ -19,6 +21,8 @@ export class ConsoleLogger {
   #level = 1;
   #template = new SyslogStmt();
   #encoder = new SyslogEncoder();
+  #transporter = new ConsoleTransporter();
+  #errorHandler = doNothing;
 
   constructor() {
     for (const level of LOG_LEVELS) {
@@ -126,13 +130,31 @@ export class ConsoleLogger {
   }
 
   /**
+   * トランスポーターでの出力中にエラーが発生した場合に呼び出されるコールバックを設定する。
+   * @param {(e: Error) => void} callback 
+   * @returns {ConsoleLogger}
+   */
+  onError(callback) {
+    if (typeof callback !== 'function') {
+      throw new Error('Invalid callback');
+    }
+    this.#errorHandler = callback;
+    return this;
+  }
+
+  /**
    * syslogStmtをこのロガーの設定でSyslogStmtを生成し、ログを出力する。
    * @param {SyslogStmt} syslogStmt 
    */
   log(syslogStmt) {
-    if (syslogStmt.isOutput(this.#level)) {
-      console.log(this.#encoder.encode(syslogStmt));
+    if (!syslogStmt.isOutput(this.#level)) {
+      return;
     }
+
+    const promise = this.#transporter.transport(this.#encoder.encode(syslogStmt))
+    promise.catch((err) => {
+      this.#errorHandler(err);
+    });
   }
 
   /**
@@ -194,3 +216,7 @@ export class ConsoleLogger {
 
 
 }
+
+function doNothing() {
+}
+
