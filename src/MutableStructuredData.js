@@ -1,12 +1,51 @@
 import * as Rfc5424Rule from "./Rfc5424Rule.js";
 
-export class MutableStructuredData {
-  #elements = new Map(); // Map<SDID, Map<Key, Value>>
-  #currentSdId = null;
+const _elements = Symbol('elements');
 
-  get element() {
-    return this.#elements;
+export class StructuredData {
+  constructor() {
+    if(this.constructor === StructuredData) {
+      throw new Error("StructeredData can't new");
+    }
+
+    this[_elements] = new Map(); // Map<SDID, Map<Key, Value>>
   }
+
+  accept(visitor) {
+    const elements = this.getElements();
+    for(const [sdId, params] of elements) {
+      visitor.visitStartSdId(sdId);
+      for(const [key, value] of params) {
+        visitor.visitParam(key, value);
+      }
+      visitor.visitEndSdId(sdId);
+    }
+  }
+
+  size() {
+    return this[_elements].size
+  }
+
+  getElements() {
+    throw new Error('not implemented');
+  }
+
+  getSdParams(sdId) {
+    throw new Error('not implemented');
+  }
+
+  isFrozen() {
+    return false;
+  }
+
+  freeze() {
+    throw new Error("not implemented");
+  }
+}
+
+
+export class MutableStructuredData extends StructuredData {
+  #currentSdId = null;
 
   /**
    * 構造化データにキーと値のペアを追加する。
@@ -56,12 +95,12 @@ export class MutableStructuredData {
     this.#currentSdId = sdId;
 
     // 以下、Mapへの追加処理...
-    if (!this.#elements.has(sdId)) {
-      this.#elements.set(sdId, new Map());
+    if (!this[_elements].has(sdId)) {
+      this[_elements].set(sdId, new Map());
     }
 
     if (arg2 !== undefined) {
-      this.#elements.get(sdId).set(key, value);
+      this[_elements].get(sdId).set(key, value);
     }
 
     return this;
@@ -89,7 +128,7 @@ export class MutableStructuredData {
       throw new Error(`sdId is not string: ${sdId}.`);
     }
 
-    if (!this.#elements.has(sdId)) {
+    if (!this[_elements].has(sdId)) {
       throw new Error(`Not found sdId: ${sdId}.`)
     }
 
@@ -109,4 +148,55 @@ export class MutableStructuredData {
 
     return true;
   }
+
+  getElements() {
+    return this[_elements];
+  }
+
+  getSdParams(sdId) {
+    return this[_elements].get(sdId);
+  }
+
+  isFrozen() {
+    return false;
+  }
+
+  freeze() {
+    return new ImmutableStructuredData(this);
+  }
 }
+
+export class ImmutableStructuredData extends StructuredData {
+
+  /**
+   * 
+   * @param {StructuredData} mutableStructuredData 
+   */
+  constructor(mutableStructuredData) {
+    super();
+
+    // Mutable の現在のデータを不変として丸ごとコピーして自分の Map に詰め替える
+    const srcElements = mutableStructuredData.getElements();
+    for (const [sdId, params] of srcElements) {
+      this[_elements].set(sdId, new Map(params));
+    }    
+  }
+
+  getElements() {
+    return this[_elements];
+  }
+
+  getSdParams(sdId) {
+    return this[_elements].get(sdId);
+  }
+
+  isFrozen(){
+    return true;
+
+  }
+  freeze() {
+    return this;
+  }
+
+
+} 

@@ -1,4 +1,5 @@
 import { Encoder } from "./Encoder.js";
+import { ImmutableStructuredData, StructuredData } from "./MutableStructuredData.js";
 import { NILVALUE, FACILITY_STR, SEVERITY_STR } from "./Rfc5424Rule.js";
 
 
@@ -22,10 +23,6 @@ const SP = " ";
  * @implements {Encoder}
  */
 export class SyslogEncoder {
-
-  static {
-  }
-
   #structuredDataEncoder = new StructuredDataEncoder();
   #timestampCache = "";
   #timestampCacheSec = 0;
@@ -74,38 +71,97 @@ export class SyslogEncoder {
     return pri + SP + ver + SP + timestamp + SP + host + SP + app + SP + proc + SP + msgId;
   }
 }
-
 /**
+ * 
+ * @abstract
  */
-export class StructuredDataEncoder {
-  constructor() {
-
+export class StructureDataVisitor {
+  /**
+   * @abstract
+   * @param {string} sdId 
+   */
+  visitStartSdId(sdId) {
+    throw new Error('not implemented');
   }
 
   /**
+   * @abstract
+   */
+  visitEndSdId() {
+    throw new Error('not implemented');
+  }
+
+
+  /**
+   * @abstract
+   * @param {string} key 
+   * @param {string} value 
+   */
+  visitParam(key, value) {
+    throw new Error('not implemented');
+  }
+}
+
+/**
+ * @implements {StructureDataVisitor}
+ */
+export class StructuredDataEncoder {
+  #cache = new WeakMap();
+  #strBuffer = null;
+  #paramsBuffer = null;
+
+  /**
    * structureDataをキャッシュして保持します。structureDataの後からの変更は止めてください。
-   * @param {*} structuredData 
+   * @param {StructuredData} structuredData 
    * @returns 
    */
   encode(structuredData) {
-    const elements = structuredData.element;
-
-    if (elements.size === 0) {
+    this.#strBuffer = "";
+    this.#paramsBuffer = [];
+    
+    if (structuredData.size() === 0) {
       return NILVALUE;
     }
-
-    let res = [];
-
-    for (const [sdId, params] of elements) {
-      const paramStrings = [];
-      for (const [key, value] of params) {
-        paramStrings.push(` ${key}="${value}"`);
+    
+    let cache = this.#cache.get(structuredData);
+    if(!cache) {
+      structuredData.accept(this);
+      if(structuredData.isFrozen()) {
+        this.#cache.set(structuredData, this.#strBuffer);
       }
-      const sdParamas = paramStrings.join("");
-
-      res.push(`[${sdId}${sdParamas}]`);
+      cache = this.#strBuffer;
     }
 
-    return res.join("");
+    this.#strBuffer = "";
+    this.#paramsBuffer = [];
+    return cache;
   }
+
+  /**
+   * 
+   * @override
+   * @param {string} sdId 
+   */
+  visitStartSdId(sdId){
+    this.#strBuffer += `[${sdId}`;
+    this.#paramsBuffer = [];
+  }
+
+  /**
+   * @override
+   */
+  visitEndSdId() {
+    this.#strBuffer = this.#strBuffer + this.#paramsBuffer.join("") + "]"
+  }
+
+  /**
+   * 
+   * @override
+   * @param {string} key 
+   * @param {string} value 
+   */
+  visitParam(key, value) {
+    this.#paramsBuffer.push(` ${key}="${value}"`);
+  }
+
 }

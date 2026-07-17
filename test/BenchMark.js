@@ -13,11 +13,11 @@ const logger = new ConsoleLogger(new MemoryTransporter()).level(7).onError(err =
 
 const VOLUME = 100000;
 const startTime = performance.now();
-const structuredData = new MutableStructuredData();
+let structuredData = new MutableStructuredData();
 structuredData.add("testSdId", "testKey", "testValue")
   .add("testSdId", "testKey2", "testValue")
   .add("testSdId2", "testKey2", "testValue");
-
+structuredData = structuredData.freeze();
 
 for (let i = 0; i < VOLUME; i++) {
   const stmt = new SyslogStmt().gen(`test_${i}`).sd(structuredData);
