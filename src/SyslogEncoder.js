@@ -68,7 +68,7 @@ export class SyslogEncoder {
 
     // 速くするために読みやすさを捨てる
     //return `${pri} ${ver} ${timestamp} ${host} ${app} ${proc} ${msgId}`;
-    return pri + SP + ver + SP + timestamp + SP + host + SP + app + SP + proc + SP + msgId;
+    return pri + ver + SP + timestamp + SP + host + SP + app + SP + proc + SP + msgId;
   }
 }
 /**

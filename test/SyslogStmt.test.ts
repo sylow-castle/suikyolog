@@ -22,7 +22,7 @@ describe("SyslogStmtクラスのテスト", () => {
       .msgId("rfc5424")
     const encoder = new SyslogEncoder();
 
-    expect(encoder.encode(stmt)).toBe(`<162> 1 2026-07-12T23:20:19.423Z localhost suikyo testSyslogStmt rfc5424 - ${BOM}test message`);
+    expect(encoder.encode(stmt)).toBe(`<162>1 2026-07-12T23:20:19.423Z localhost suikyo testSyslogStmt rfc5424 - ${BOM}test message`);
   });
 
   test("rfc5424モードでの典型例(構造化データ付き)", () => {
@@ -31,16 +31,16 @@ describe("SyslogStmtクラスのテスト", () => {
     const sd = new MutableStructuredData().add("testSdId", "testKey", "testValue");
     const stmt = builder.gen(testMessage)
       .time(now)
-      .host(undefined)
-      .app(undefined)
-      .proc(undefined)
-      .msgId(undefined)
+      .host(undefined as any)
+      .app(undefined as any)
+      .proc(undefined as any)
+      .msgId(undefined as any)
       .sd(sd);
     const encoder = new SyslogEncoder();
     const sdEncoder = new StructuredDataEncoder();
     const sdStr = sdEncoder.encode(sd);
 
-    expect(encoder.encode(stmt)).toBe(`<129> 1 ${now.toISOString()} - - - - ${sdStr} ${BOM}${testMessage}`);
+    expect(encoder.encode(stmt)).toBe(`<129>1 ${now.toISOString()} - - - - ${sdStr} ${BOM}${testMessage}`);
   });
 
   test.for([
@@ -58,9 +58,9 @@ describe("SyslogStmtクラスのテスト", () => {
     const encoder = new SyslogEncoder();
 
     //初期値は重大度1
-    expect(encoder.encode(stmt)).toBe(`<129> 1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
+    expect(encoder.encode(stmt)).toBe(`<129>1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
     stmt[severity]();
-    expect(encoder.encode(stmt)).toBe(`<${expectPri}> 1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
+    expect(encoder.encode(stmt)).toBe(`<${expectPri}>1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
   });
 
   test.for([
@@ -71,7 +71,7 @@ describe("SyslogStmtクラスのテスト", () => {
   ])(`versionのバリデーション（invalidVersion: $invalidVersion）`, ({ invalidVersion }) => {
     const stmt = new SyslogStmt();
 
-    expect(() => stmt.ver(invalidVersion)).toThrow(/Invalid version:/);
+    expect(() => stmt.ver(invalidVersion as any)).toThrow(/Invalid version:/);
   });
 
   test.for([
@@ -83,7 +83,7 @@ describe("SyslogStmtクラスのテスト", () => {
     { invalidSeverity: "Emergency" },
   ])("severityのバリデーション(invalidSeverity: $invalidSeverity)", ({ invalidSeverity }) => {
     const stmt = new SyslogStmt();
-    expect(() => stmt.sev(invalidSeverity)).toThrow(/Invalid severity:/);
+    expect(() => stmt.sev(invalidSeverity as any)).toThrow(/Invalid severity:/);
   });
 
   test.for([
@@ -95,7 +95,7 @@ describe("SyslogStmtクラスのテスト", () => {
     { invalidFacility: "Local0" },
   ])("facilityのバリデーション(invalidFacility: $invalidFacility)", ({ invalidFacility }) => {
     const stmt = new SyslogStmt();
-    expect(() => stmt.fac(invalidFacility)).toThrow(/Invalid facility:/);
+    expect(() => stmt.fac(invalidFacility as any)).toThrow(/Invalid facility:/);
   });
 
   test.for([

@@ -60,7 +60,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
     const encoder = new SyslogEncoder();
     const BOM = "\uFEFF";
 
-    expect(encoder.encode(stmt)).toBe(`<161> 0 ${now.toISOString()} localhost suikyo testConsoleLogger test - ${BOM}test message`);
+    expect(encoder.encode(stmt)).toBe(`<161>0 ${now.toISOString()} localhost suikyo testConsoleLogger test - ${BOM}test message`);
   });
 
   test.for([
@@ -92,7 +92,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
     logger[severity](stmt);
     const encoder = new SyslogEncoder();
     expect(spy).toHaveBeenCalledTimes(1);
-    expect(encoder.encode(stmt)).toBe(`<161> 1 ${now.toISOString()} localhost suikyo testConsoleLogger test -`);
+    expect(encoder.encode(stmt)).toBe(`<161>1 ${now.toISOString()} localhost suikyo testConsoleLogger test -`);
 
     spy.mockRestore();
   });
