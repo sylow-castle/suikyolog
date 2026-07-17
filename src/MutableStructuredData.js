@@ -1,6 +1,6 @@
 import * as Rfc5424Rule from "./Rfc5424Rule.js";
 
-export class StructuredData {
+export class MutableStructuredData {
   #elements = new Map(); // Map<SDID, Map<Key, Value>>
   #currentSdId = null;
 
@@ -17,7 +17,7 @@ export class StructuredData {
    * @param {string} arg1 必須。null、空文字でもエラーを吐く
    * @param {string} arg2
    * @param {string} arg3
-   * @returns {StructuredData}
+   * @returns {MutableStructuredData}
    */
   add(arg1, arg2, arg3) {
     let sdId, key, value;
@@ -72,7 +72,7 @@ export class StructuredData {
    * @param {string} arg1 
    * @param {string} arg2 
    * @param {string} arg3 
-   * @returns {StructuredData}
+   * @returns {MutableStructuredData}
    * @see {@link add} addメソッドを参照
    */
   set(arg1, arg2, arg3) {
@@ -82,7 +82,7 @@ export class StructuredData {
   /**
    * 指定したSDIDを現在の編集対象にする。
    * @param {*} sdId 
-   * @returns {StructuredData}
+   * @returns {MutableStructuredData}
    */
   use(sdId) {
     if (typeof sdId !== "string") {

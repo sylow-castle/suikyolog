@@ -2,7 +2,7 @@
  * @typedef { 'Emerg' | 'Alert' | 'Crit' | 'Err' | 'Warn' | 'Notice' | 'Info' | 'Debug' } Severity
  */
 
-import { StructuredData } from "./StructuredData.js";
+import { MutableStructuredData } from "./MutableStructuredData.js";
 import * as Rfc5424Rule from "./Rfc5424Rule.js";
 
 export class SyslogStmt {
@@ -14,7 +14,7 @@ export class SyslogStmt {
   #appname = Rfc5424Rule.NILVALUE;
   #procId = Rfc5424Rule.NILVALUE;
   #msgId = Rfc5424Rule.NILVALUE;
-  #structuredData = new StructuredData();
+  #structuredData = new MutableStructuredData();
   #msg = "";
 
   /**
@@ -242,7 +242,7 @@ export class SyslogStmt {
    * 引数で指定した構造化データを設定する。
    * 文字列が渡された場合は、そのまま設定する。
    * StructuredDataが渡された場合は、toString()を実行してから設定する。
-   * @param {string | StructuredData} structuredData stringは"-"のみ許可。null、undefinedはNILVALUEとして扱う。
+   * @param {string | MutableStructuredData} structuredData stringは"-"のみ許可。null、undefinedはNILVALUEとして扱う。
    * @returns {SyslogStmt}
    */
   sd(structuredData) {
@@ -252,7 +252,7 @@ export class SyslogStmt {
         throw new Error(`Invalid structuredData: ${structuredData}`);
       }
       this.#structuredData = structuredData;
-    } else if (structuredData instanceof StructuredData) {
+    } else if (structuredData instanceof MutableStructuredData) {
       this.#structuredData = structuredData;
     } else {
       throw new Error(`Invalid structuredData: ${structuredData}`);

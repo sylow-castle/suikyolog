@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { SyslogStmt } from '../src/SyslogStmt.js';
-import { StructuredData } from '../src/StructuredData.js';
+import { MutableStructuredData } from '../src/MutableStructuredData.js';
 import { SyslogEncoder, StructuredDataEncoder } from '../src/SyslogEncoder.js';
 import { SimpleEncoder } from '../src/SimpleEncoder.js';
 import { Encoder } from '../src/Encoder.js';
@@ -28,7 +28,7 @@ describe("SyslogStmtクラスのテスト", () => {
   test("rfc5424モードでの典型例(構造化データ付き)", () => {
     const now = new Date();
     const builder = new SyslogStmt();
-    const sd = new StructuredData().add("testSdId", "testKey", "testValue");
+    const sd = new MutableStructuredData().add("testSdId", "testKey", "testValue");
     const stmt = builder.gen(testMessage)
       .time(now)
       .host(undefined)
