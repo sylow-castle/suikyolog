@@ -1,10 +1,10 @@
 import { describe, test, expect } from 'vitest';
 import { StructuredData } from '../src/StructuredData.js';
-import { StructureDataEncoder } from '../src/SyslogEncoder.js';
+import { StructuredDataEncoder } from '../src/SyslogEncoder.js';
 
 describe("StructuredDataクラスのテスト", () => {
   test("SDIDの典型例", () => {
-    const encoder = new StructureDataEncoder();
+    const encoder = new StructuredDataEncoder();
     const sd = new StructuredData()
       .add("testSdId", "testKey", "testValue");
     expect(encoder.encode(sd)).toBe(`[testSdId testKey="testValue"]`);
@@ -13,7 +13,7 @@ describe("StructuredDataクラスのテスト", () => {
   test("addを引数1個で呼ぶ", () => {
     const sd = new StructuredData()
       .add("testSdId", undefined, undefined);
-    const encoder = new StructureDataEncoder();
+    const encoder = new StructuredDataEncoder();
     console.log(encoder.encode(sd));
     expect(encoder.encode(sd)).toBe(`[testSdId]`);
   });
@@ -23,7 +23,7 @@ describe("StructuredDataクラスのテスト", () => {
     const sd = new StructuredData()
       .add(longStr, undefined, undefined)
       .set("testKey", "testValue", undefined);
-    const encoder = new StructureDataEncoder();
+    const encoder = new StructuredDataEncoder();
     expect(encoder.encode(sd)).toBe(`[${longStr} testKey="testValue"]`);
   });
 
@@ -100,7 +100,7 @@ describe("StructuredDataクラスのテスト", () => {
     { paramValue: ']', escaped: '\\]' },
     { paramValue: '\\', escaped: '\\\\' },
   ])(`PARAM-VALUEは",],\\をエスケープする（paramValue: $escaped）`, ({ paramValue, escaped }) => {
-    const encoder = new StructureDataEncoder();
+    const encoder = new StructuredDataEncoder();
     const sd = new StructuredData()
       .add("testSdId", "testKey", paramValue);
     expect(encoder.encode(sd)).toBe(`[testSdId testKey="${escaped}"]`);
@@ -114,7 +114,7 @@ describe("StructuredDataクラスのテスト", () => {
       .use("testSdId1")
       .add("testName3", "testParam3", undefined)
 
-    const encoder = new StructureDataEncoder();
+    const encoder = new StructuredDataEncoder();
     expect(encoder.encode(sd)).toBe(`[testSdId1 testName1="testParam1" testName3="testParam3"][testSdId2 testName2="testParam2"]`);
   });
 

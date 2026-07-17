@@ -8,7 +8,7 @@ import * as Rfc5424Rule from "./Rfc5424Rule.js";
 export class SyslogStmt {
   #facility = Rfc5424Rule.FACILITY_NUM.local0;
   #severity = Rfc5424Rule.SEVERITY_NUM.Alert;
-  #timestamp = new Date();
+  #timestamp = Date.now();
   #version = Rfc5424Rule.VERSION;
   #hostname = Rfc5424Rule.NILVALUE;
   #appname = Rfc5424Rule.NILVALUE;
@@ -119,13 +119,14 @@ export class SyslogStmt {
    * @returns {SyslogStmt}
    */
   time(timestamp) {
-    if (timestamp instanceof Date) {
+    if (timestamp === null || timestamp === undefined) {
+      this.#timestamp = Date.now();
+    } else if (Number.isInteger(timestamp)) {
       this.#timestamp = timestamp;
+    } else if (timestamp instanceof Date) {
+      this.#timestamp = timestamp.getTime();
     } else {
-      this.#timestamp = new Date(timestamp);
-      if (isNaN(this.#timestamp)) {
-        throw new Error(`Invalid timestamp: ${timestamp}`);
-      }
+      throw new Error(`Invalid timestamp: ${timestamp}`);
     }
     return this;
   }

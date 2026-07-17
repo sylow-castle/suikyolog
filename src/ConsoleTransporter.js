@@ -8,7 +8,7 @@ export class ConsoleTransporter extends Transporter {
    * コンソールに出力する
    * @override
    * @async
-   * @param {string} payload 
+   * @param {string} payload
    * @throw Error コンソール出力でエラーが発生した場合
    */
   async transport(payload) {

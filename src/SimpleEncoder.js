@@ -10,7 +10,7 @@ export class SimpleEncoder extends Encoder {
      */
     encode(syslogStmt) {
         const pri = syslogStmt.pri;
-        const timestamp = syslogStmt.timestamp.toISOString();
+        const timestamp = new Date(syslogStmt.timestamp).toISOString();
         const rawMsg = syslogStmt.msg || "";
         const msg = Encoder.escapeControlChars(rawMsg);
         return `[${pri}] ${timestamp} ${msg}`;

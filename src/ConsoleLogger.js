@@ -17,6 +17,20 @@ const LOG_LEVELS = Object.freeze([
   "debug",
 ]);
 
+/**
+ * Syslog仕様に準拠したコンソールロガー
+ * 
+ * @class ConsoleLogger
+ * 
+ * @method {ConsoleLogger} emerg(messageOrStmt: string | SyslogStmt | Error) - 最重要のエラーを出力する
+ * @method {ConsoleLogger} alert(messageOrStmt: string | SyslogStmt | Error) - 即時対応が必要な警告を出力する
+ * @method {ConsoleLogger} crit(messageOrStmt: string | SyslogStmt | Error) - 致命的なシステムエラーを出力する
+ * @method {ConsoleLogger} err(messageOrStmt: string | SyslogStmt | Error) - 通常のエラーを出力する
+ * @method {ConsoleLogger} warn(messageOrStmt: string | SyslogStmt | Error) - 警告を出力する
+ * @method {ConsoleLogger} notice(messageOrStmt: string | SyslogStmt | Error) - 注意が必要な正常なイベントを出力する
+ * @method {ConsoleLogger} info(messageOrStmt: string | SyslogStmt | Error) - 一般的な情報メッセージを出力する
+ * @method {ConsoleLogger} debug(messageOrStmt: string | SyslogStmt | Error) - 開発用のデバッグ情報を出力する
+ */
 export class ConsoleLogger {
   #level = 1;
   #template = new SyslogStmt();
@@ -24,16 +38,37 @@ export class ConsoleLogger {
   #transporter = new ConsoleTransporter();
   #errorHandler = doNothing;
 
-  constructor() {
+  static {
     for (const level of LOG_LEVELS) {
-      this[level] = (syslogStmt) => {
-        const upper = level.charAt(0).toUpperCase() + level.slice(1)
-        const finalStmt = syslogStmt.clone().sev(upper);
-        this.log(finalStmt);
-        return this;
+      ConsoleLogger.prototype[level] = function (syslogStmt) {
+        return this.#dispatchLog(level, syslogStmt)
       };
     }
   }
+
+  constructor(transporter = new ConsoleTransporter(), encoder = new SyslogEncoder(),) {
+    this.#encoder = encoder;
+    this.#transporter = transporter;
+  }
+
+  #dispatchLog(levelStr, syslogStmt) {
+    const upper = levelStr.charAt(0).toUpperCase() + levelStr.slice(1)
+    let finalStmt;
+
+    if (typeof syslogStmt === "string") {
+      finalStmt = this.#template.gen(syslogStmt).sev(upper);
+    } else if (syslogStmt instanceof SyslogStmt) {
+      finalStmt = syslogStmt.clone().sev(upper);
+    } else if (syslogStmt instanceof Error) {
+      finalStmt = this.#template.gen(syslogStmt.message + "\n" + syslogStmt.stack).sev(upper);
+    } else {
+      finalStmt = this.#template.gen(String(syslogStmt)).sev(upper);
+    }
+
+    this.log(finalStmt);
+    return this;
+  }
+
   /**
    * このロガーの設定を元にSyslogStmtを設定、生成する
    * @returns { SyslogStmt } 設定済みのSyslogStmt
@@ -43,6 +78,7 @@ export class ConsoleLogger {
   }
 
   /**
+   * ログレベルを設定する
    * @param {number} level
    * @returns {ConsoleLogger}
    */
@@ -56,7 +92,7 @@ export class ConsoleLogger {
   }
 
   /**
-   * 
+   * このロガーが出力するログのバージョンを設定する
    * @param {*} version 
    * @returns 
    */
@@ -66,7 +102,7 @@ export class ConsoleLogger {
   }
 
   /**
-   * 
+   * このロガーが出力するログのファシリティ（機能）を設定する
    * @param {*} facility 
    * @returns 
    */
@@ -150,71 +186,11 @@ export class ConsoleLogger {
     if (!syslogStmt.isOutput(this.#level)) {
       return;
     }
-
     const promise = this.#transporter.transport(this.#encoder.encode(syslogStmt))
     promise.catch((err) => {
       this.#errorHandler(err);
     });
   }
-
-  /**
-   * 引数のログを複製し、Emergレベルに設定して出力する。
-   * @param {SyslogStmt} syslogStmt 
-   * @returns {ConsoleLogger}
-   */
-  emerg(syslogStmt) { }
-
-  /**
-   * 引数のログを複製し、Critレベルに設定して出力する。
-   * @param {SyslogStmt} syslogStmt 
-   * @returns {ConsoleLogger}
-   */
-  crit(syslogStmt) { }
-
-  /**
-   * 引数のログを複製し、Alertレベルに設定して出力する。
-   * @param {SyslogStmt} syslogStmt 
-   * @returns {ConsoleLogger}
-   */
-  alert(syslogStmt) { }
-
-  /**
-   * 引数のログを複製し、Errorレベルに設定して出力する。
-   * @param {SyslogStmt} syslogStmt 
-   * @returns {ConsoleLogger}
-   */
-  err(syslogStmt) { }
-
-
-  /**
-   * 引数のログを複製し、Warnレベルに設定して出力する。
-   * @param {SyslogStmt} syslogStmt 
-   * @returns {ConsoleLogger}
-   */
-  warn(syslogStmt) { }
-
-  /**
-   * 引数のログを複製し、Noticeレベルに設定して出力する。
-   * @param {SyslogStmt} syslogStmt 
-   * @returns {ConsoleLogger}
-   */
-  notice(syslogStmt) { }
-
-  /**
-   * 引数のログを複製し、Infoレベルに設定して出力する。
-   * @param {SyslogStmt} syslogStmt 
-   * @returns {ConsoleLogger}
-   */
-  info(syslogStmt) { }
-
-  /**
-   * 引数のログを複製し、Debugレベルに設定して出力する。
-   * @param {SyslogStmt} syslogStmt 
-   * @returns {ConsoleLogger}
-   */
-  debug(syslogStmt) { }
-
-
 }
 
 function doNothing() {

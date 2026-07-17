@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { SyslogStmt } from '../src/SyslogStmt.js';
 import { StructuredData } from '../src/StructuredData.js';
-import { SyslogEncoder, StructureDataEncoder } from '../src/SyslogEncoder.js';
+import { SyslogEncoder, StructuredDataEncoder } from '../src/SyslogEncoder.js';
 import { SimpleEncoder } from '../src/SimpleEncoder.js';
 import { Encoder } from '../src/Encoder.js';
 
@@ -37,7 +37,7 @@ describe("SyslogStmtクラスのテスト", () => {
       .msgId(undefined)
       .sd(sd);
     const encoder = new SyslogEncoder();
-    const sdEncoder = new StructureDataEncoder();
+    const sdEncoder = new StructuredDataEncoder();
     const sdStr = sdEncoder.encode(sd);
 
     expect(encoder.encode(stmt)).toBe(`<129> 1 ${now.toISOString()} - - - - ${sdStr} ${BOM}${testMessage}`);
@@ -99,7 +99,6 @@ describe("SyslogStmtクラスのテスト", () => {
   });
 
   test.for([
-    { invalidTime: undefined },
     { invalidTime: "test" },
     { invalidTime: {} },
   ])("timestampのバリデーション(invalidTime: $invalidTime)", ({ invalidTime }) => {
