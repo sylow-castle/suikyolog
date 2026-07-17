@@ -27,8 +27,14 @@ export class Encoder {
     // \x0E-\x1F: SO～US
     // \x7F: DEL
     // \u200B-\u200F,\uFEFF, \uFFFE, \uFFFF：非文字
-    return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u200B-\u200F\uFEFF\uFFFE\uFFFF]/g, (match) => {
-      const char = match.charCodeAt(0);
+    return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\p{Cc}\p{Cf}\u200B-\u200F\uFEFF\uFFFE\uFFFF]/gu, Encoder.escapeReplacer);
+  }
+  
+  static escapeReplacer(match) {
+    const char = match.charCodeAt(0);
+    if (char === 9 || char === 10 || char === 13) {
+      return match;
+    } else {
       if (char <= 127) {
         const code = char.toString(16).toUpperCase().padStart(2, '0');
         return `\\x${code}`;
@@ -36,8 +42,6 @@ export class Encoder {
         const code = char.toString(16).toUpperCase().padStart(4, '0');
         return `\\u${code}`;
       }
-    });
+    }
   }
-
-
 }
