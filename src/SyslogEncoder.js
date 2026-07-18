@@ -102,11 +102,41 @@ export class StructureDataVisitor {
   }
 }
 
+class RingBUfferCache {
+  static #SIZE = 64
+  #keys = new Array(RingBUfferCache.#SIZE).fill(null);
+  #values = new Array(RingBUfferCache.#SIZE).fill(null);
+  #cursor = 0;
+
+  constructor(size) {
+    for(let index = 0; index < RingBUfferCache.#SIZE;index++) {
+      this.#keys[index] = null;
+    }
+  }
+
+  get(key) {
+    for(let index = 0; index < RingBUfferCache.#SIZE;index++) {
+      if(this.#keys[index] === key) {
+        return this.#values[index];
+      }
+    }
+
+    return null;    
+  }
+
+  set(key, value) {
+    this.#keys[this.#cursor] = key;
+    this.#values[this.#cursor] = value;
+    this.#cursor = ( this.#cursor + 1) % RingBUfferCache.#SIZE 
+  }
+  
+}
+
 /**
  * @implements {StructureDataVisitor}
  */
 export class StructuredDataEncoder {
-  #cache = new WeakMap();
+  #cache = new RingBUfferCache();
   #strBuffer = null;
   #paramsBuffer = null;
 

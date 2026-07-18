@@ -12,7 +12,7 @@ export class StructuredData {
   }
 
   accept(visitor) {
-    const elements = this.getElements();
+    const elements = this[_elements];
     for(const [sdId, params] of elements) {
       visitor.visitStartSdId(sdId);
       for(const [key, value] of params) {
@@ -24,14 +24,6 @@ export class StructuredData {
 
   size() {
     return this[_elements].size
-  }
-
-  getElements() {
-    throw new Error('not implemented');
-  }
-
-  getSdParams(sdId) {
-    throw new Error('not implemented');
   }
 
   isFrozen() {
@@ -149,14 +141,6 @@ export class MutableStructuredData extends StructuredData {
     return true;
   }
 
-  getElements() {
-    return this[_elements];
-  }
-
-  getSdParams(sdId) {
-    return this[_elements].get(sdId);
-  }
-
   isFrozen() {
     return false;
   }
@@ -176,18 +160,10 @@ export class ImmutableStructuredData extends StructuredData {
     super();
 
     // Mutable の現在のデータを不変として丸ごとコピーして自分の Map に詰め替える
-    const srcElements = mutableStructuredData.getElements();
+    const srcElements = mutableStructuredData[_elements];
     for (const [sdId, params] of srcElements) {
       this[_elements].set(sdId, new Map(params));
     }    
-  }
-
-  getElements() {
-    return this[_elements];
-  }
-
-  getSdParams(sdId) {
-    return this[_elements].get(sdId);
   }
 
   isFrozen(){
