@@ -8,6 +8,12 @@ import { SyslogStmt } from "./SyslogStmt.js";
 export class Transporter {
   #next = null;
 
+  constructor() {
+    if(new.target === Transporter) {
+      throw Error(`This is abstract class: ${Transporter.name}`);
+    }
+  }
+
   /**
    * 継承したクラスでオーバーライドしてください。非同期処理が前提です。
    * このメソッドは常に例外を投げます。

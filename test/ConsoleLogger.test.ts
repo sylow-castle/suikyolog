@@ -5,7 +5,7 @@ import { SimpleEncoder } from '../src/core/SimpleEncoder.js';
 import { SyslogEncoder } from '../src/core/SyslogEncoder.js';
 import { SEVERITY_NUM } from '../src/core/Rfc5424Rule.js';
 import { TransporterBuilder } from '../src/core/TransporterBuilder.js';
-import { ConsoleTransporter } from '../src/core/ConsoleTransporter.js';
+import { ConsoleWriter } from '../src/core/ConsoleWriter.js';
 
 describe("ConsoleLoggerクラスのテスト", () => {
   test('内部的にはconsole.logを呼ぶ', () => {
@@ -15,7 +15,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
     const logger = new ConsoleLogger(TransporterBuilder
       .start(1)
       .encodedBy(new SimpleEncoder())
-      .write(new ConsoleTransporter())
+      .write(new ConsoleWriter())
       .end()).fac(20);
     const time = new Date();
     const stmt = new SyslogStmt().gen(`test message`).time(time);
@@ -36,7 +36,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
     const logger = new ConsoleLogger(
       TransporterBuilder.start(7)
         .encodedBy(new SyslogEncoder())
-        .write(new ConsoleTransporter({
+        .write(new ConsoleWriter({
           onError: errorHandler
         }))
         .end()
@@ -62,7 +62,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
     const tp = TransporterBuilder
                 .start(6)
                 .encodedBy(new SyslogEncoder())
-                .write(new ConsoleTransporter())
+                .write(new ConsoleWriter())
                 .end();
 
     const logger = new ConsoleLogger(tp).ver(0)
@@ -92,7 +92,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
   ])(`重大度メソッドは渡したインスタンスの設定を変更しない（severity: $severity）`, ({ severity }) => {
     const logger = new ConsoleLogger(TransporterBuilder.start(SEVERITY_NUM.Debug)
         .encodedBy(new SyslogEncoder())
-        .write(new ConsoleTransporter())
+        .write(new ConsoleWriter())
         .end()
       ).ver(1)
       .fac(20)
@@ -119,7 +119,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
   test(`stopすると何も出力しない。resumeすると再び出力する`, () => {
     const logger = new ConsoleLogger(TransporterBuilder.start(SEVERITY_NUM.Debug)
         .encodedBy(new SyslogEncoder())
-        .write(new ConsoleTransporter())
+        .write(new ConsoleWriter())
         .end()
       ).stop();
     const now = new Date();

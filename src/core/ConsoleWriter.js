@@ -1,40 +1,31 @@
 import { Encoder } from "./Encoder.js";
 import { SyslogStmt } from "./SyslogStmt.js";
 import { Transporter } from "./Transporter.js";
+import { Writer } from "./Writer.js";
 
 /**
  * コンソール出力をするトランスポーター
  */
-export class ConsoleTransporter extends Transporter {
-  /**
-   * @type Encoder
-   */
-  #encoder = null;
+export class ConsoleWriter extends Writer {
   #errorHandler = null;
+
   constructor(conf = {}) {
-    super();
+    super(conf);
     if(typeof conf.onError === "function") {
       this.#errorHandler = conf.onError
     }
   }
 
-  setEncoder(encoder) {
-    this.#encoder = encoder;
-  }
-
-
   /**
    * コンソールに出力する
    * @override
-   * @async
-   * @param {SyslogStmt} payload
+   * @param {string} payload
    * @throw Error コンソール出力でエラーが発生した場合
    */
-  transport(payload) {
-    const str = this.#encoder.encode(payload);
+  write(frame) {
     try {
-      console.log(str);
-    } catch(err) {
+      console.log(frame);
+    } catch (err) {
       this.#errorHandler(err);
     }
   }

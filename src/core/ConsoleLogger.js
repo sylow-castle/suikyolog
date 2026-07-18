@@ -1,6 +1,6 @@
 import { SyslogStmt } from "./SyslogStmt.js";
 import { SyslogEncoder } from "./SyslogEncoder.js"
-import { ConsoleTransporter } from "./ConsoleTransporter.js";
+import { ConsoleWriter } from "./ConsoleWriter.js";
 import { FACILITY_NUM, SEVERITY_NUM } from "./Rfc5424Rule.js";
 import { Encoder } from "./Encoder.js";
 import { Transporter } from "./Transporter.js";
