@@ -7,10 +7,14 @@
         "moduleResolution": "node",
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "noEmit": true
+        "noEmit": true,
+        "types": [
+            "node"
+        ]
+
     },
     "exclude": [
         "node_modules",
         "coverage"
-    ]
+    ],
 }

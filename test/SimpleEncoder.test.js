@@ -6,7 +6,7 @@ describe("SimpleEncoderクラスのテスト", () => {
   test("典型的な出力結果", () => {
     const encoder = new SimpleEncoder();
     const now = new Date();
-    const st = new SyslogStmt().time(now).gen("test");
+    const st = new SyslogStmt().gen("test").time(now);
     const message = encoder.encode(st);
     expect(message).toBe(`[129] ${now.toISOString()} test`);
   });

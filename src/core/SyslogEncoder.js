@@ -22,7 +22,7 @@ const SP = " ";
 /**
  * @implements {Encoder}
  */
-export class SyslogEncoder {
+export class SyslogEncoder extends Encoder{
   #structuredDataEncoder = new StructuredDataEncoder();
   #timestampCache = "";
   #timestampCacheSec = 0;
@@ -36,7 +36,7 @@ export class SyslogEncoder {
     const rawMsg = syslogStmt.msg ? syslogStmt.msg : "";
     let msg = "";
     if (rawMsg !== "") {
-      msg = " ".concat("\uFEFF", Encoder.escapeControlChars(rawMsg));
+      msg = " " + "\uFEFF" + Encoder.escapeControlChars(rawMsg);
     }
 
     return `${header} ${structuredData}${msg}`;

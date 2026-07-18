@@ -1,3 +1,4 @@
+import { SyslogStmt } from "./SyslogStmt.js";
 import { Transporter } from "./Transporter.js";
 
 export class MemoryTransporter extends Transporter {
@@ -7,11 +8,13 @@ export class MemoryTransporter extends Transporter {
     /**
      * メモリーにログを保存する
      * @override
-     * @param {string} payload 
+     * @param {SyslogStmt} payload 
      */
     async transport(payload) {
         this.logs.push(payload);
     }
+
+    setEncoder(encoder) {}
 
     /**
      * logの内容が詰まった配列を返却します。

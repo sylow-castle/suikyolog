@@ -14,7 +14,6 @@ describe("StructuredDataクラスのテスト", () => {
     const sd = new MutableStructuredData()
       .add("testSdId", undefined as any, undefined as any);
     const encoder = new StructuredDataEncoder();
-    console.log(encoder.encode(sd));
     expect(encoder.encode(sd)).toBe(`[testSdId]`);
   });
 
