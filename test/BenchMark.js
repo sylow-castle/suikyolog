@@ -1,9 +1,9 @@
-import { ConsoleLogger } from "../src/ConsoleLogger.js";
-import { SyslogEncoder } from "../src/SyslogEncoder.js";
-import { SimpleEncoder } from "../src/SimpleEncoder.js";
-import { SyslogStmt } from "../src/SyslogStmt.js";
-import { MutableStructuredData } from "../src/StructuredData.js";
-import { MemoryTransporter } from "../src/MemoryTransporter.js";
+import { ConsoleLogger } from "../src/core/ConsoleLogger.js";
+import { SyslogEncoder } from "../src/core/SyslogEncoder.js";
+import { SimpleEncoder } from "../src/core/SimpleEncoder.js";
+import { SyslogStmt } from "../src/core/SyslogStmt.js";
+import { MutableStructuredData } from "../src/core/StructuredData.js";
+import { MemoryTransporter } from "../src/core/MemoryTransporter.js";
 
 const stmt = new SyslogStmt().gen("test");
 const encoder = new SyslogEncoder();

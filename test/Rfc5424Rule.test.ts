@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import * as Rfc5424Rule from '../src/Rfc5424Rule.js';
+import * as Rfc5424Rule from '../src/core/Rfc5424Rule.js';
 
 describe("Rfc5424Ruleモジュールのテスト", () => {
 

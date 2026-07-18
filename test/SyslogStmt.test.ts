@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'vitest';
-import { SyslogStmt } from '../src/SyslogStmt.js';
-import { MutableStructuredData } from '../src/StructuredData.js';
-import { SyslogEncoder, StructuredDataEncoder } from '../src/SyslogEncoder.js';
-import { SimpleEncoder } from '../src/SimpleEncoder.js';
-import { Encoder } from '../src/Encoder.js';
+import { SyslogStmt } from '../src/core/SyslogStmt.js';
+import { MutableStructuredData } from '../src/core/StructuredData.js';
+import { SyslogEncoder, StructuredDataEncoder } from '../src/core/SyslogEncoder.js';
+import { SimpleEncoder } from '../src/core/SimpleEncoder.js';
+import { Encoder } from '../src/core/Encoder.js';
 
 const BOM = "\uFEFF";
 const testMessage = "test message";

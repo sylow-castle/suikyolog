@@ -1,9 +1,9 @@
 import { describe, test, expect, vi } from 'vitest';
-import { ConsoleLogger } from '../src/ConsoleLogger.js';
-import { SyslogStmt } from '../src/SyslogStmt.js';
-import { SimpleEncoder } from '../src/SimpleEncoder.js';
-import { SyslogEncoder } from '../src/SyslogEncoder.js';
-import { SEVERITY_NUM } from '../src/Rfc5424Rule.js';
+import { ConsoleLogger } from '../src/core/ConsoleLogger.js';
+import { SyslogStmt } from '../src/core/SyslogStmt.js';
+import { SimpleEncoder } from '../src/core/SimpleEncoder.js';
+import { SyslogEncoder } from '../src/core/SyslogEncoder.js';
+import { SEVERITY_NUM } from '../src/core/Rfc5424Rule.js';
 
 describe("ConsoleLoggerクラスのテスト", () => {
   test('内部的にはconsole.logを呼ぶ', () => {

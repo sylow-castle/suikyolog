@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { MutableStructuredData } from '../src/StructuredData.js';
-import { StructuredDataEncoder } from '../src/SyslogEncoder.js';
+import { MutableStructuredData } from '../src/core/StructuredData.js';
+import { StructuredDataEncoder } from '../src/core/SyslogEncoder.js';
 
 describe("StructuredDataクラスのテスト", () => {
   test("SDIDの典型例", () => {

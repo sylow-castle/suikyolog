@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { Encoder } from '../src/Encoder.js';
+import { Encoder } from '../src/core/Encoder.js';
 
 describe("Encoderクラスのテスト", () => {
 
