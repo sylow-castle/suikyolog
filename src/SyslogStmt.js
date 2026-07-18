@@ -2,7 +2,7 @@
  * @typedef { 'Emerg' | 'Alert' | 'Crit' | 'Err' | 'Warn' | 'Notice' | 'Info' | 'Debug' } Severity
  */
 
-import { MutableStructuredData, StructuredData } from "./MutableStructuredData.js";
+import { MutableStructuredData, StructuredData } from "./StructuredData.js";
 import * as Rfc5424Rule from "./Rfc5424Rule.js";
 
 export class SyslogStmt {

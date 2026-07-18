@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { MutableStructuredData } from '../src/MutableStructuredData.js';
+import { MutableStructuredData } from '../src/StructuredData.js';
 import { StructuredDataEncoder } from '../src/SyslogEncoder.js';
 
 describe("StructuredDataクラスのテスト", () => {

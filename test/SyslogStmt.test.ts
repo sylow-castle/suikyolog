@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { SyslogStmt } from '../src/SyslogStmt.js';
-import { MutableStructuredData } from '../src/MutableStructuredData.js';
+import { MutableStructuredData } from '../src/StructuredData.js';
 import { SyslogEncoder, StructuredDataEncoder } from '../src/SyslogEncoder.js';
 import { SimpleEncoder } from '../src/SimpleEncoder.js';
 import { Encoder } from '../src/Encoder.js';

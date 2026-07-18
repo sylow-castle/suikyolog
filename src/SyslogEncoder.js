@@ -1,5 +1,5 @@
 import { Encoder } from "./Encoder.js";
-import { ImmutableStructuredData, StructuredData } from "./MutableStructuredData.js";
+import { ImmutableStructuredData, StructuredData } from "./StructuredData.js";
 import { NILVALUE, FACILITY_STR, SEVERITY_STR } from "./Rfc5424Rule.js";
 
 
