@@ -1,5 +1,5 @@
 import { FilterTransporter } from "./FilterTransporter.js";
-import { MultipleTransporter } from "./MultipleTransporter.js";
+import { FanoutTransporter } from "./FanoutTransporter.js";
 
 export class TransporterBuilder {
   #first = null
@@ -93,10 +93,10 @@ export class FanoutTransporterBuilder {
   }
 
   /**
-     * @returns {MultipleTransporter}
+     * @returns {FanoutTransporter}
    */
   build() {
-    const fanout = new MultipleTransporter(this.#children);
+    const fanout = new FanoutTransporter(this.#children);
     return faunout;
   }
 

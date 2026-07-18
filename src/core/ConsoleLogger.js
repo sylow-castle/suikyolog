@@ -160,7 +160,7 @@ export class ConsoleLogger {
    * syslogStmtをこのロガーの設定でSyslogStmtを生成し、ログを出力する。
    * @param {SyslogStmt} syslogStmt 
    */
-  async log(syslogStmt) {    
+  log(syslogStmt) {    
     if(this.#isMute) {
       return;
     }

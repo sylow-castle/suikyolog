@@ -2,12 +2,12 @@ import { error } from "node:console";
 import { Transporter } from "./Transporter.js";
 import { SyslogStmt } from "./SyslogStmt.js";
 
-export class MultipleTransporter extends Transporter {
+export class FanoutTransporter extends Transporter {
 
   /**
    * @typee Array<Transporter>
    */
-  #transporters = [];
+  #children = [];
   #strategy = null;
 
   /**
@@ -22,7 +22,7 @@ export class MultipleTransporter extends Transporter {
     }
 
     for(const tp of transporters){
-      this.#transporters.push(tp);
+      this.#children.push(tp);
     }
   }
 
@@ -43,7 +43,7 @@ export class MultipleTransporter extends Transporter {
     }
     */
 
-    const promises = this.#transporters.map( (transporter, index) => {
+    const promises = this.#children.map( (transporter, index) => {
       try {
         return transporter.transport(payload);
       } catch (err) {
