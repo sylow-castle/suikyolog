@@ -74,7 +74,7 @@ export class TransporterBuilder {
     this.#transporters.push(current);
     this.#transporters.push(fanoutTransporter);
 
-    return this;
+    return new FinishedTransporterBuilder(this.#first, fanoutTransporter, null);
   }
 
 }
@@ -97,7 +97,7 @@ export class FanoutTransporterBuilder {
    */
   build() {
     const fanout = new FanoutTransporter(this.#children);
-    return faunout;
+    return fanout;
   }
 
 }

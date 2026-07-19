@@ -37,7 +37,9 @@ export class Writer extends Transporter {
    * @abstract
    * @param {string | byte[]} frame 
    */
-  write(frame) { }
+  write(frame) {
+    throw new Error("not implemented")
+  }
 
   /**
    * エンコーダーを設定します

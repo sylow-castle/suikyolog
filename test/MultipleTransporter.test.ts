@@ -1,8 +1,10 @@
 import {vi,test,describe,expect} from "vitest";
-import { StdoutTransporter } from "../src/node/StdoutTransporter.js"
+import { StdoutWriter } from "../src/node/StdoutTransporter.js"
 import { stdout } from "node:process";
 import { FanoutTransporter } from "../src/core/FanoutTransporter.js";
 import { TransporterBuilder } from "../src/core/TransporterBuilder.js";
+import { SyslogEncoder } from "../src/core/SyslogEncoder.js";
+import { SyslogStmt } from "../src/core/SyslogStmt.js";
 
 
 describe("MultipleTransporterのテスト",() => {
@@ -10,12 +12,19 @@ describe("MultipleTransporterのテスト",() => {
     const spy = vi.spyOn(stdout, "write").mockImplementation(() => { });
 
     TransporterBuilder.start
-    const transporter1 = new StdoutTransporter();
-    const transporter2 = new StdoutTransporter();
+    const transporter1 = new StdoutWriter({});
+    transporter1.setEncoder(new SyslogEncoder())
+    const transporter2 = new StdoutWriter({});
+    transporter2.setEncoder(new SyslogEncoder())
+
     const transporter = new FanoutTransporter([transporter1, transporter2])
     try {
-      await transporter.transport("test");
-      expect(spy).toHaveBeenCalledWith(expect.stringContaining("test\n"));
+      const now = Date.now();
+      const stmt = new SyslogStmt().gen("test").time(now);
+      transporter.transport(stmt);
+      const str = new SyslogEncoder().encode(stmt);
+      console.error(str);
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining(str));
       expect(spy).toHaveBeenCalledTimes(2);
     } finally {
       spy.mockRestore();

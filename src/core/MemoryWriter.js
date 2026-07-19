@@ -1,5 +1,6 @@
 import { SyslogStmt } from "./SyslogStmt.js";
 import { Transporter } from "./Transporter.js";
+import { Writer } from "./Writer.js";
 
 export class MemoryWriter extends Writer {
 
