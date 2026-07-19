@@ -1,5 +1,5 @@
 import {vi,test,describe,expect} from "vitest";
-import { StdoutWriter } from "../src/node/StdoutTransporter.js"
+import { StdoutWriter } from "../src/node/StdoutWriter.js"
 import { stdout } from "node:process";
 import { FanoutTransporter } from "../src/core/FanoutTransporter.js";
 import { TransporterBuilder } from "../src/core/TransporterBuilder.js";
