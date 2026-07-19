@@ -1,20 +1,17 @@
 import {vi,test,describe,expect} from "vitest";
-import { StdoutWriter } from "../src/node/StdoutWriter.js"
-import { stdout } from "node:process";
 import { FanoutTransporter } from "../src/core/FanoutTransporter.js";
-import { TransporterBuilder } from "../src/core/TransporterBuilder.js";
 import { SyslogEncoder } from "../src/core/SyslogEncoder.js";
 import { SyslogStmt } from "../src/core/SyslogStmt.js";
+import { ConsoleWriter } from "../src/core/ConsoleWriter.js";
 
 
 describe("MultipleTransporterのテスト",() => {
   test('2個指定したら2回呼ばれる', async () => {
-    const spy = vi.spyOn(stdout, "write").mockImplementation(() => { });
+    const spy = vi.spyOn(console, "log").mockImplementation(() => { });
 
-    TransporterBuilder.start
-    const transporter1 = new StdoutWriter({});
+    const transporter1 = new ConsoleWriter({});
     transporter1.setEncoder(new SyslogEncoder())
-    const transporter2 = new StdoutWriter({});
+    const transporter2 = new ConsoleWriter({});
     transporter2.setEncoder(new SyslogEncoder())
 
     const transporter = new FanoutTransporter([transporter1, transporter2])
@@ -23,7 +20,6 @@ describe("MultipleTransporterのテスト",() => {
       const stmt = new SyslogStmt().gen("test").time(now);
       transporter.transport(stmt);
       const str = new SyslogEncoder().encode(stmt);
-      console.error(str);
       expect(spy).toHaveBeenCalledWith(expect.stringContaining(str));
       expect(spy).toHaveBeenCalledTimes(2);
     } finally {
