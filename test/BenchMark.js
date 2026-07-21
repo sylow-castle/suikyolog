@@ -1,15 +1,15 @@
 import { ConsoleLogger } from "../src/core/ConsoleLogger.js";
 import { SyslogEncoder } from "../src/core/SyslogEncoder.js";
 import { SimpleEncoder } from "../src/core/SimpleEncoder.js";
-import { SyslogStmt } from "../src/core/SyslogStmt.js";
+import { SyslogStmt, SyslogStmtBuilder } from "../src/core/SyslogStmt.js";
 import { MutableStructuredData } from "../src/core/StructuredData.js";
 import { MemoryWriter } from "../src/core/MemoryWriter.js";
 import { PosixWriter, StdoutWriter } from "../src/node/StdoutWriter.js";
 import { TransporterBuilder } from "../src/core/TransporterBuilder.js";
 import { ConsoleWriter } from "../src/core/ConsoleWriter.js";
 import { NullTransporter } from "../src/core/NullTransporter.js";
+import { NullWriter } from "../src/core/Writer.js";
 
-const stmt = new SyslogStmt().gen("test");
 const encoder = new SyslogEncoder();
 const logger = new ConsoleLogger(TransporterBuilder.start(7)
   .encodedBy(new SyslogEncoder())
@@ -24,7 +24,7 @@ structuredData.add("testSdId", "testKey", "testValue")
 structuredData = structuredData.freeze();
 
 for (let i = 0; i < VOLUME; i++) {
-  const stmt = new SyslogStmt().gen(`test_${i}`).sd(structuredData);
+  const stmt = new SyslogStmtBuilder().msg(`test_${i}`).sd(structuredData).build();
   logger.info(stmt);
 }
 const endTime = performance.now();

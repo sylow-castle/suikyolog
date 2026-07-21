@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
 import { ConsoleLogger } from '../src/core/ConsoleLogger.js';
-import { SyslogStmt } from '../src/core/SyslogStmt.js';
+import { SyslogStmtBuilder } from '../src/core/SyslogStmt.js';
 import { SimpleEncoder } from '../src/core/SimpleEncoder.js';
 import { SyslogEncoder } from '../src/core/SyslogEncoder.js';
 import { SEVERITY_NUM } from '../src/core/Rfc5424Rule.js';
@@ -18,7 +18,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
       .write(new ConsoleWriter())
       .end()).fac(20);
     const time = new Date();
-    const stmt = new SyslogStmt().gen(`test message`).time(time);
+    const stmt = new SyslogStmtBuilder().msg(`test message`).time(time).build();
 
     logger.log(stmt);
 
@@ -42,7 +42,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
         .end()
     ).fac(20);
     logger.onError(errorHandler)
-    const stmt = new SyslogStmt().emerg().gen(`test message`);
+    const stmt = new SyslogStmtBuilder().emerg().msg(`test message`).build();
 
     logger.log(stmt);
     await vi.waitFor(() => {
@@ -58,12 +58,12 @@ describe("ConsoleLoggerクラスのテスト", () => {
     spy.mockRestore();
   });
 
-  test('ロガーを通じてSyslogStmtの各状態を設定できる', () => {
+  test('ロガーを通じてSyslogStmtBuilderの各状態を設定できる', () => {
     const tp = TransporterBuilder
-                .start(6)
-                .encodedBy(new SyslogEncoder())
-                .write(new ConsoleWriter())
-                .end();
+      .start(6)
+      .encodedBy(new SyslogEncoder())
+      .write(new ConsoleWriter())
+      .end();
 
     const logger = new ConsoleLogger(tp).ver(0)
       .fac(20)
@@ -72,64 +72,26 @@ describe("ConsoleLoggerクラスのテスト", () => {
       .proc("testConsoleLogger")
       .msgId("test");
 
-    const now = new Date()
-    const stmt = logger.createSyslogStmt().gen(`test message`).time(now);
+    const now = new Date();
+    const stmt = logger.createSyslogStmt("test message", null, now);
     const encoder = new SyslogEncoder();
     const BOM = "\uFEFF";
 
     expect(encoder.encode(stmt)).toBe(`<161>0 ${now.toISOString()} localhost suikyo testConsoleLogger test - ${BOM}test message`);
   });
 
-  test.for([
-    { severity: "emerg" },
-    { severity: "alert" },
-    { severity: "crit" },
-    { severity: "err" },
-    { severity: "warn" },
-    { severity: "notice" },
-    { severity: "info" },
-    { severity: "debug" },
-  ])(`重大度メソッドは渡したインスタンスの設定を変更しない（severity: $severity）`, ({ severity }) => {
-    const logger = new ConsoleLogger(TransporterBuilder.start(SEVERITY_NUM.Debug)
-        .encodedBy(new SyslogEncoder())
-        .write(new ConsoleWriter())
-        .end()
-      ).ver(1)
-      .fac(20)
-      .host("localhost")
-      .app("suikyo")
-      .proc("testConsoleLogger")
-      .msgId("test");
-
-    const now = new Date();
-    const stmt = logger.createSyslogStmt().time(now);
-
-    //コンソールに出力させないためのモック利用
-    const spy = vi.spyOn(console, 'log').mockImplementation(() => { });
-
-    stmt.sev(SEVERITY_NUM.Alert);
-    logger[severity](stmt);
-    const encoder = new SyslogEncoder();
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(encoder.encode(stmt)).toBe(`<161>1 ${now.toISOString()} localhost suikyo testConsoleLogger test -`);
-
-    spy.mockRestore();
-  });
-
   test(`stopすると何も出力しない。resumeすると再び出力する`, () => {
     const logger = new ConsoleLogger(TransporterBuilder.start(SEVERITY_NUM.Debug)
-        .encodedBy(new SyslogEncoder())
-        .write(new ConsoleWriter())
-        .end()
-      ).stop();
-    const now = new Date();
-    const stmt = logger.createSyslogStmt().time(now);
+      .encodedBy(new SyslogEncoder())
+      .write(new ConsoleWriter())
+      .end()
+    ).stop();
+    const stmt = logger.createSyslogStmt();
 
     //コンソールに出力させないためのモック利用
     const spy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
-    stmt.sev(SEVERITY_NUM.Alert);
-    logger.log(stmt);
+    logger.stop().log(stmt);
     expect(spy).toHaveBeenCalledTimes(0);
 
 

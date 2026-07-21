@@ -1,10 +1,8 @@
-import { SyslogStmt } from "./SyslogStmt.js";
-import { SyslogEncoder } from "./SyslogEncoder.js"
+import { SyslogStmt, SyslogStmtBuilder } from "./SyslogStmt.js";
 import { ConsoleWriter } from "./ConsoleWriter.js";
-import { FACILITY_NUM, SEVERITY_NUM } from "./Rfc5424Rule.js";
-import { Encoder } from "./Encoder.js";
+import { FACILITY_NUM, NILVALUE, SEVERITY_NUM } from "./Rfc5424Rule.js";
 import { Transporter } from "./Transporter.js";
-import { NullTransporter } from "./NullTransporter.js";
+import { MutableStructuredData } from "./StructuredData.js";
 
 
 const LOG_LEVELS = Object.freeze([
@@ -33,7 +31,7 @@ const LOG_LEVELS = Object.freeze([
  * @method {ConsoleLogger} debug(messageOrStmt: string | SyslogStmt | Error) - 開発用のデバッグ情報を出力する
  */
 export class ConsoleLogger {
-  #template = new SyslogStmt();
+  #template = new SyslogStmtBuilder();
   #transporter = null;
 
   #errorHandler = doNothing;
@@ -48,7 +46,7 @@ export class ConsoleLogger {
   }
 
   constructor(transporter) {
-    if(!(transporter instanceof Transporter)) {
+    if (!(transporter instanceof Transporter)) {
       throw new Error(`invalid transporter: ${transporter}`);
     }
     this.#transporter = transporter;
@@ -59,15 +57,16 @@ export class ConsoleLogger {
   #dispatchLog(levelStr, syslogStmt) {
     const upper = levelStr.charAt(0).toUpperCase() + levelStr.slice(1)
     let finalStmt;
+    const sevNum = SEVERITY_NUM[upper];
 
     if (typeof syslogStmt === "string") {
-      finalStmt = this.#template.gen(syslogStmt).sev(upper);
+      finalStmt = this.#template.sev(sevNum).msg(syslogStmt).build();
     } else if (syslogStmt instanceof SyslogStmt) {
-      finalStmt = syslogStmt.clone().sev(upper);
+      finalStmt = syslogStmt;
     } else if (syslogStmt instanceof Error) {
-      finalStmt = this.#template.gen(syslogStmt.message + "\n" + syslogStmt.stack).sev(upper);
+      finalStmt = this.#template.sev(upper).msg(syslogStmt.message + "\n" + syslogStmt.stack).build();
     } else {
-      finalStmt = this.#template.gen(String(syslogStmt)).sev(upper);
+      finalStmt = this.#template.sev(upper).msg(syslogStmt.toString()).build();
     }
 
     this.log(finalStmt);
@@ -78,8 +77,20 @@ export class ConsoleLogger {
    * このロガーの設定を元にSyslogStmtを設定、生成する
    * @returns { SyslogStmt } 設定済みのSyslogStmt
    */
-  createSyslogStmt() {
-    return this.#template.clone();
+  createSyslogStmt(msg = "", sd, time) {
+    const builder = this.#template.cloneTemplate();
+    if (msg === null) {
+      msg = "";
+    }
+
+    if (sd === NILVALUE || sd === null) {
+      sd = new MutableStructuredData();
+    }
+
+    builder.msg(msg);
+    builder.sd(sd)
+    builder.time(time);
+    return builder.build();
   }
 
 
@@ -160,16 +171,13 @@ export class ConsoleLogger {
    * syslogStmtをこのロガーの設定でSyslogStmtを生成し、ログを出力する。
    * @param {SyslogStmt} syslogStmt 
    */
-  log(syslogStmt) {    
-    if(this.#isMute) {
+  log(syslogStmt) {
+    if (this.#isMute) {
       return;
     }
     try {
-      const promise = this.#transporter.transport(syslogStmt);
-      promise.catch((err) => {
-        this.#errorHandler(err);
-      });
-    } catch(err) {
+      this.#transporter.transport(syslogStmt);
+    } catch (err) {
       this.#errorHandler(err);
     }
   }

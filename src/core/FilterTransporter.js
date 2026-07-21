@@ -5,10 +5,10 @@ import { Transporter } from "./Transporter.js";
  * 指定した条件でフィルタリングします
  * 
  */
-export class FilterTransporter extends Transporter  {
+export class FilterTransporter extends Transporter {
   #condition = null
 
-  constructor(condition){
+  constructor(condition) {
     super();
     this.#condition = condition
   }
@@ -19,7 +19,7 @@ export class FilterTransporter extends Transporter  {
    * @param {SyslogStmt} payload 
    */
   async transport(payload) {
-    if(this.#condition(payload)){
+    if (this.#condition(payload)) {
       this.next(payload)
     }
   }

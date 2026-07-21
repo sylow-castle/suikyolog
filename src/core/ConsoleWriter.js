@@ -11,7 +11,7 @@ export class ConsoleWriter extends Writer {
 
   constructor(conf = {}) {
     super(conf);
-    if(typeof conf.onError === "function") {
+    if (typeof conf.onError === "function") {
       this.#errorHandler = conf.onError
     }
   }

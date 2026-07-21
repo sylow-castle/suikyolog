@@ -9,11 +9,11 @@ export class TransporterBuilder {
   /**
    * @param 最初に設定するログレベルフィルターのレベル
    * @returns {TransporterBuilder}
-   */ 
-  static start(level){
-    const result = new TransporterBuilder(); 
+   */
+  static start(level) {
+    const result = new TransporterBuilder();
     result.#transporters = [];
-    result.filter((syslogStmt) => {return syslogStmt.isOutput(level)});
+    result.filter((syslogStmt) => { return syslogStmt.isOutput(level) });
     return result;
   }
 
@@ -50,10 +50,10 @@ export class TransporterBuilder {
    **/
 
   /**
-   * @param { Encoder<T> | EncodedFunc<T> } encoder
+   * @param { Encoder<T> | EncodeFunc<T> } encoder
    * @returns {CompiledTransporterBuilder<T>}
    */
-  encodedBy(encoder){
+  encodedBy(encoder) {
     const last = this.#transporters.pop();
     this.#transporters.push(last);
     return new CompiledTransporterBuilder(this.#first, last, encoder);
@@ -74,7 +74,7 @@ export class TransporterBuilder {
     this.#transporters.push(current);
     this.#transporters.push(fanoutTransporter);
 
-    return new FinishedTransporterBuilder(this.#first, fanoutTransporter, null);
+    return new FinishedTransporterBuilder(this.#first);
   }
 
 }
@@ -121,8 +121,8 @@ class CompiledTransporterBuilder {
     this.#first = first;
     this.#last = last;
 
-    if(typeof encoder === "function") {
-      encoder = (syslogStmt) => {return encoder(syslogStmt)};
+    if (typeof encoder === "function") {
+      encoder = (syslogStmt) => { return encoder(syslogStmt) };
     }
     this.#encoder = encoder;
   }
@@ -133,7 +133,7 @@ class CompiledTransporterBuilder {
    * @param {Writer<T>} Tを受けて書き込む奴の型。コンソールとかファイルとか。
    * @return {FinieshedTransporterBuilder}
    */
-  write(writer){
+  write(writer) {
     const current = this.#last;
     writer.setEncoder(this.#encoder);
     this.#last.setNext(writer);
@@ -153,7 +153,7 @@ class FinishedTransporterBuilder {
   /**
    * @returns {Transporter}
    */
-  end(){
+  end() {
     return this.#first;
   }
 }

@@ -17,11 +17,11 @@ export class FanoutTransporter extends Transporter {
   constructor(transporters, strategyName = "all") {
     super();
     this.#strategy = Promise[strategyName];
-    if(typeof this.#strategy !== "function") {
+    if (typeof this.#strategy !== "function") {
       throw Error(`Invalid strategyName: ${strategyName}`)
     }
 
-    for(const tp of transporters){
+    for (const tp of transporters) {
       this.#children.push(tp);
     }
   }
@@ -43,7 +43,7 @@ export class FanoutTransporter extends Transporter {
     }
     */
 
-    const promises = this.#children.map( (transporter, index) => {
+    const promises = this.#children.map((transporter, index) => {
       try {
         return transporter.transport(payload);
       } catch (err) {

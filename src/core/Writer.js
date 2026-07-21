@@ -14,7 +14,7 @@ export class Writer extends Transporter {
    */
   constructor(config) {
     super();
-    if(new.target === Writer) {
+    if (new.target === Writer) {
       throw Error(`This is abstract class: ${Writer.name}`);
     }
 
@@ -47,5 +47,28 @@ export class Writer extends Transporter {
    */
   setEncoder(encoder) {
     this[_encoder] = encoder
+  }
+}
+
+export class NullWriter extends Writer {
+  #config = {};
+
+
+  /**
+   * 
+   * @param {object} config 
+   */
+  constructor(config) {
+    super();
+    this[_encoder] = null;
+    this.#config = config;
+  }
+
+  /**
+   * 何もしない
+   * 
+   * @param {string | byte[]} frame 
+   */
+  write(frame) {
   }
 }

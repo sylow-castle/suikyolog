@@ -1,12 +1,12 @@
 import { describe, test, expect } from "vitest";
 import { SimpleEncoder } from "../src/core/SimpleEncoder";
-import { SyslogStmt } from "../src/core/SyslogStmt";
+import { SyslogStmt, SyslogStmtBuilder } from "../src/core/SyslogStmt";
 
 describe("SimpleEncoderクラスのテスト", () => {
   test("典型的な出力結果", () => {
     const encoder = new SimpleEncoder();
     const now = new Date();
-    const st = new SyslogStmt().gen("test").time(now);
+    const st = new SyslogStmtBuilder().msg("test").time(now).build();
     const message = encoder.encode(st);
     expect(message).toBe(`[129] ${now.toISOString()} test`);
   });

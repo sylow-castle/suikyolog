@@ -1,28 +1,15 @@
 import { Encoder } from "./Encoder.js";
 import { ImmutableStructuredData, StructuredData } from "./StructuredData.js";
-import { NILVALUE, FACILITY_STR, SEVERITY_STR } from "./Rfc5424Rule.js";
+import { NILVALUE, FACILITY_STR, SEVERITY_STR, MS_CACHE, PRI_CACHE } from "./Rfc5424Rule.js";
 
 
-const MS_CACHE_SIZE = 1000;
-let tmp = new Array(MS_CACHE_SIZE);
-for (let ms = 0; ms < MS_CACHE_SIZE; ms++) {
-  tmp[ms] = "." + ms.toString().padStart(3, "0") + "Z";
-}
-const MS_CACHE = Object.freeze(tmp);
-
-const PRI_CACHE_SIZE = FACILITY_STR.length * SEVERITY_STR.length;
-tmp = new Array(PRI_CACHE_SIZE);
-for (let pri = 0; pri <= PRI_CACHE_SIZE; pri++) {
-  tmp[pri] = "<" + pri.toString() + ">";
-}
-const PRI_CACHE = Object.freeze(tmp);
 const SP = " ";
 
 
 /**
  * @implements {Encoder}
  */
-export class SyslogEncoder extends Encoder{
+export class SyslogEncoder extends Encoder {
   #structuredDataEncoder = new StructuredDataEncoder();
   #timestampCache = "";
   #timestampCacheSec = 0;
@@ -39,7 +26,7 @@ export class SyslogEncoder extends Encoder{
       msg = " " + "\uFEFF" + Encoder.escapeControlChars(rawMsg);
     }
 
-    return `${header} ${structuredData}${msg}`;
+    return header + " " + structuredData + msg;
   }
 
   /**
@@ -102,41 +89,49 @@ export class StructureDataVisitor {
   }
 }
 
-class RingBUfferCache {
+class RingBufferCache {
   static #SIZE = 64
-  #keys = new Array(RingBUfferCache.#SIZE).fill(null);
-  #values = new Array(RingBUfferCache.#SIZE).fill(null);
+  #keys = new Array(RingBufferCache.#SIZE).fill(null);
+  #values = new Array(RingBufferCache.#SIZE).fill(null);
   #cursor = 0;
 
-  constructor(size) {
-    for(let index = 0; index < RingBUfferCache.#SIZE;index++) {
+  constructor() {
+    for (let index = 0; index < RingBufferCache.#SIZE; index++) {
       this.#keys[index] = null;
+      this.#values[index] = null;
     }
   }
 
   get(key) {
-    for(let index = 0; index < RingBUfferCache.#SIZE;index++) {
-      if(this.#keys[index] === key) {
+    for (let index = 0; index < RingBufferCache.#SIZE; index++) {
+      if (this.#keys[index] === key) {
         return this.#values[index];
       }
     }
 
-    return null;    
+    return null;
   }
 
   set(key, value) {
+    for (let index = 0; index < RingBufferCache.#SIZE; index++) {
+      if (this.#keys[index] === key) {
+        this.#keys[index] = null;
+        this.#values[index] = null;
+      }
+    }
+
     this.#keys[this.#cursor] = key;
     this.#values[this.#cursor] = value;
-    this.#cursor = ( this.#cursor + 1) % RingBUfferCache.#SIZE 
+    this.#cursor = (this.#cursor + 1) % RingBufferCache.#SIZE
   }
-  
+
 }
 
 /**
  * @implements {StructureDataVisitor}
  */
 export class StructuredDataEncoder {
-  #cache = new RingBUfferCache();
+  #cache = new RingBufferCache();
   #strBuffer = null;
   #paramsBuffer = null;
 
@@ -148,15 +143,19 @@ export class StructuredDataEncoder {
   encode(structuredData) {
     this.#strBuffer = "";
     this.#paramsBuffer = [];
-    
+
+    if (structuredData === NILVALUE) {
+      return NILVALUE;
+    }
+
     if (structuredData.size() === 0) {
       return NILVALUE;
     }
-    
+
     let cache = this.#cache.get(structuredData);
-    if(!cache) {
+    if (!cache) {
       structuredData.accept(this);
-      if(structuredData.isFrozen()) {
+      if (structuredData.isFrozen()) {
         this.#cache.set(structuredData, this.#strBuffer);
       }
       cache = this.#strBuffer;
@@ -172,7 +171,7 @@ export class StructuredDataEncoder {
    * @override
    * @param {string} sdId 
    */
-  visitStartSdId(sdId){
+  visitStartSdId(sdId) {
     this.#strBuffer += `[${sdId}`;
     this.#paramsBuffer = [];
   }

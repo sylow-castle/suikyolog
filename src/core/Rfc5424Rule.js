@@ -161,3 +161,18 @@ export function escapeParamValue(value) {
     .replace(/"/g, '\\"')
     .replace(/]/g, '\\]');
 }
+
+
+const MS_CACHE_SIZE = 1000;
+let tmp = new Array(MS_CACHE_SIZE);
+for (let ms = 0; ms < MS_CACHE_SIZE; ms++) {
+  tmp[ms] = "." + ms.toString().padStart(3, "0") + "Z";
+}
+export const MS_CACHE = Object.freeze(tmp);
+
+const PRI_CACHE_SIZE = FACILITY_STR.length * SEVERITY_STR.length;
+tmp = new Array(PRI_CACHE_SIZE);
+for (let pri = 0; pri < PRI_CACHE_SIZE; pri++) {
+  tmp[pri] = "<" + pri.toString() + ">";
+}
+export const PRI_CACHE = Object.freeze(tmp);

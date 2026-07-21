@@ -9,7 +9,7 @@ export class Transporter {
   #next = null;
 
   constructor() {
-    if(new.target === Transporter) {
+    if (new.target === Transporter) {
       throw Error(`This is abstract class: ${Transporter.name}`);
     }
   }
@@ -17,6 +17,7 @@ export class Transporter {
   /**
    * 継承したクラスでオーバーライドしてください。非同期処理が前提です。
    * このメソッドは常に例外を投げます。
+   * @abstract
    * @param {SyslogStmt | stinrg | byte[]} payload 
    * @throws {Error} 転送処理に失敗した場合。
    */
@@ -37,7 +38,7 @@ export class Transporter {
    * @param {SyslogStmt} syslogStmt 
    */
   next(syslogStmt) {
-    if(this.#next) {
+    if (this.#next) {
       this.#next.transport(syslogStmt);
     } else {
       throw new Error("Pipline is broken")

@@ -5,17 +5,86 @@
 import { MutableStructuredData, StructuredData } from "./StructuredData.js";
 import * as Rfc5424Rule from "./Rfc5424Rule.js";
 
-export class SyslogStmt {
-  #facility = Rfc5424Rule.FACILITY_NUM.local0;
-  #severity = Rfc5424Rule.SEVERITY_NUM.Alert;
-  #timestamp = Date.now();
-  #version = Rfc5424Rule.VERSION;
-  #hostname = Rfc5424Rule.NILVALUE;
-  #appname = Rfc5424Rule.NILVALUE;
-  #procId = Rfc5424Rule.NILVALUE;
-  #msgId = Rfc5424Rule.NILVALUE;
-  #structuredData = new MutableStructuredData();
-  #msg = "";
+export class SyslogStmtHeader {
+  #facility;
+  #severity;
+  #timestamp;
+  #version;
+  #hostname;
+  #appname;
+  #procId;
+  #msgId;
+
+  constructor(fac, sev, ver, time, host, app, proc, msgId,) {
+    if (typeof fac === "string" && Rfc5424Rule.FACILITY_NUM.hasOwnProperty(fac)) {
+      this.#facility = Rfc5424Rule.FACILITY_NUM[fac];
+    } else if (Number.isInteger(fac) && 0 <= fac && fac <= 23) {
+      this.#facility = fac;
+    } else {
+      throw new Error(`Invalid facility: ${fac}`);
+    }
+
+    if (typeof sev === "string" && Rfc5424Rule.SEVERITY_NUM.hasOwnProperty(sev)) {
+      this.#severity = Rfc5424Rule.SEVERITY_NUM[sev];
+    } else if (Number.isInteger(sev) && 0 <= sev && sev <= 7) {
+      this.#severity = sev;
+    } else {
+      throw new Error(`Invalid severity: ${sev}`);
+    }
+
+    if (Number.isInteger(ver) && 0 <= ver && ver <= 1) {
+      this.#version = ver;
+    } else {
+      throw new Error(`Invalid version: ${ver}`);
+    }
+
+    if (time === null || time === undefined) {
+      this.#timestamp = Date.now();
+    } else if (Number.isInteger(time)) {
+      this.#timestamp = time;
+    } else if (time instanceof Date) {
+      this.#timestamp = time.getTime();
+    } else {
+      throw new Error(`Invalid timestamp: ${time}`);
+    }
+
+
+    host = this.#nilOrString(host);
+    if (Rfc5424Rule.isValidHostname(host)) {
+      this.#hostname = host;
+    } else {
+      throw new Error(`Invalid hostname: ${host}`);
+    }
+
+    app = this.#nilOrString(app);
+    if (Rfc5424Rule.isValidAppName(app)) {
+      this.#appname = app;
+    } else {
+      throw new Error(`Invalid appname: ${app}`);
+    }
+
+    proc = this.#nilOrString(proc);
+    if (Rfc5424Rule.isValidProcessId(proc)) {
+      this.#procId = proc;
+    } else {
+      throw new Error(`Invalid procId: ${proc}`);
+    }
+
+    msgId = this.#nilOrString(msgId);
+    if (Rfc5424Rule.isValidMsgId(msgId)) {
+      this.#msgId = msgId;
+    } else {
+      throw new Error(`Invalid msgId: ${msgId}`);
+    }
+  }
+
+  get facility() {
+    return this.#facility;
+  }
+
+  get severity() {
+    return this.#severity;
+  }
 
   /**
    * PRI値を取得する。
@@ -25,321 +94,28 @@ export class SyslogStmt {
     return Rfc5424Rule.getPri(this.#facility, this.#severity);
   }
 
-  /** 
-   * タイムスタンプと構造化データを覗いて複製する。
-   * 引数で新しいメッセージを設定する。
-   * 申し訳ないがMSGにバイナリがRFC5424的には許されるが、ここでは対応してない（勘弁して欲しい）
-   * @param {string} msg 
-   * @returns {SyslogStmt}
-   **/
-  gen(msg) {
-    const result = new SyslogStmt();
-    result.#severity = this.#severity;
-    result.#facility = this.#facility;
-    result.#version = this.#version;
-    result.#hostname = this.#hostname;
-    result.#appname = this.#appname;
-    result.#procId = this.#procId;
-    result.#msgId = this.#msgId;
-    //structuredDataとmsgはコピーしない。
-
-    result.#msg = msg;
-    return result;
-  }
-
-  /**
-   * 現在のインスタンスのコピーを作成する。
-   * @returns {SyslogStmt}
-   */
-  clone() {
-    const result = this.gen(this.#msg);
-    result.#structuredData = this.#structuredData;
-    result.#timestamp = this.#timestamp;
-    return result;
-  }
-
-  /**
-   * ファシリティを設定する。
-   * @param {string | number} facility 
-   * @returns {SyslogStmt}
-   */
-  fac(facility) {
-    if (typeof facility === "string" && Rfc5424Rule.FACILITY_NUM.hasOwnProperty(facility)) {
-      this.#facility = Rfc5424Rule.FACILITY_NUM[facility];
-    } else if (Number.isInteger(facility) && 0 <= facility && facility <= 23) {
-      this.#facility = facility;
-    } else {
-      throw new Error(`Invalid facility: ${facility}`);
-    }
-    return this;
-  }
-
-  /**
-   * 重大度を設定する。
-   * @param {string | number} severity 
-   * @returns {SyslogStmt}
-   */
-  sev(severity) {
-    if (typeof severity === "string" && Rfc5424Rule.SEVERITY_NUM.hasOwnProperty(severity)) {
-      this.#severity = Rfc5424Rule.SEVERITY_NUM[severity];
-    } else if (Number.isInteger(severity) && 0 <= severity && severity <= 7) {
-      this.#severity = severity;
-    } else {
-      throw new Error(`Invalid severity: ${severity}`);
-    }
-    return this;
-  }
-
-  /**
-   * バージョンを設定する。とりあえず0か1しか設定しない。
-   * @param {number} version 
-   * @returns {SyslogStmt}
-   */
-  ver(version) {
-    if (Number.isInteger(version) && 0 <= version && version <= 1) {
-      this.#version = version;
-    } else {
-      throw new Error(`Invalid version: ${version}`);
-    }
-    return this;
-  }
-
-  /**
-   * バージョン番号を取得する
-   * @returns {string}
-   */
-  get version() {
-    return this.#version.toString();
-  }
-
-  /**
-   * タイムスタンプを設定する。現在時刻はログ生成時に自動設定される。
-   * 引数がDate型の場合はそのインスタンスを使用、そうでない場合はDateコンストラクタに渡す。
-   * @param {*} timestamp 
-   * @returns {SyslogStmt}
-   */
-  time(timestamp) {
-    if (timestamp === null || timestamp === undefined) {
-      this.#timestamp = Date.now();
-    } else if (Number.isInteger(timestamp)) {
-      this.#timestamp = timestamp;
-    } else if (timestamp instanceof Date) {
-      this.#timestamp = timestamp.getTime();
-    } else {
-      throw new Error(`Invalid timestamp: ${timestamp}`);
-    }
-    return this;
-  }
-
-  /**
-   * タイムスタンプを取得する
-   * @returns {Date}
-   */
   get timestamp() {
     return this.#timestamp;
   }
 
-  /**
-   * ホスト名を設定する。
-   * @param {string} hostname 空文字、null、undefined を与えられると、NILVALUEとして解釈します。 
-   * @returns {SyslogStmt}
-   */
-  host(hostname) {
-    hostname = this.#nilOrString(hostname);
-
-    if (Rfc5424Rule.isValidHostname(hostname)) {
-      this.#hostname = hostname;
-    } else {
-      throw new Error(`Invalid hostname: ${hostname}`);
-    }
-
-    return this;
+  get version() {
+    return this.#version;
   }
 
-  /**
-   * ホスト名を取得する。
-   * @returns {string}
-   */
   get hostname() {
     return this.#hostname;
   }
 
-  /**
-   * アプリケーション名を設定する。
-   * @param {string} appname 空文字、null、undefined を与えられると、NILVALUEとして解釈します。
-   * @returns {SyslogStmt}
-   */
-  app(appname) {
-    appname = this.#nilOrString(appname);
-
-    if (Rfc5424Rule.isValidAppName(appname)) {
-      this.#appname = appname;
-    } else {
-      throw new Error(`Invalid appname: ${appname}`);
-    }
-
-    return this;
-  }
-
-  /**
-   * アプリケーション名を取得する。
-   * @returns {string}
-   */
   get appname() {
     return this.#appname;
   }
 
-  /**
-   * プロセスIDを設定する。
-   * @param {string} procId 空文字、null、undefined を与えられると、NILVALUEとして解釈します。
-   * @returns {SyslogStmt}
-   */
-  proc(procId) {
-    procId = this.#nilOrString(procId);
-    if (Rfc5424Rule.isValidProcessId(procId)) {
-      this.#procId = procId;
-    } else {
-      throw new Error(`Invalid procId: ${procId}`);
-    }
-
-    return this;
-  }
-
-  /**
-   * プロセスIDを取得する。
-   * @returns {string}
-   */
   get procId() {
     return this.#procId;
   }
 
-  /**
-   * メッセージIDを設定する。
-   * @param {string} msgId 空文字、null、undefined を与えられると、NILVALUEとして解釈します。
-   * @returns {SyslogStmt}
-   */
-  msgId(msgId) {
-    msgId = this.#nilOrString(msgId);
-
-    if (Rfc5424Rule.isValidMsgId(msgId)) {
-      this.#msgId = msgId;
-    } else {
-      throw new Error(`Invalid msgId: ${msgId}`);
-    }
-
-    return this;
-  }
-
-  /**
-   * メッセージIDを取得する。
-   * @returns {string}
-   */
-  get messageId() {
+  get msgId() {
     return this.#msgId;
-  }
-
-  /**
-   * 引数で指定した構造化データを設定する。
-   * 文字列が渡された場合は、そのまま設定する。
-   * StructuredDataが渡された場合は、toString()を実行してから設定する。
-   * @param {string | StructuredData} structuredData stringは"-"のみ許可。null、undefinedはNILVALUEとして扱う。
-   * @returns {SyslogStmt}
-   */
-  sd(structuredData) {
-    structuredData = this.#nilOrString(structuredData);
-    if (typeof structuredData === 'string') {
-      if (structuredData !== Rfc5424Rule.NILVALUE) {
-        throw new Error(`Invalid structuredData: ${structuredData}`);
-      }
-      this.#structuredData = structuredData;
-    } else if (structuredData instanceof StructuredData) {
-      this.#structuredData = structuredData;
-    } else {
-      throw new Error(`Invalid structuredData: ${structuredData}`);
-    }
-
-    return this;
-  }
-
-  /**
-   * 構造化データを取得する。
-   * @returns {string}
-   */
-  get structuredData() {
-    return this.#structuredData;
-  }
-
-  /**
-   * メッセージを取得する。
-   * @returns {string}
-   */
-  get msg() {
-    return this.#msg;
-  }
-
-  /**
-   * ログレベルをemergに設定する。
-   * @returns {SyslogStmt}
-   */
-  emerg() {
-    return this.sev(Rfc5424Rule.SEVERITY_NUM.Emerg);
-  }
-
-  /**
-   * ログレベルをcritに設定する。
-   * @returns {SyslogStmt}
-   */
-  crit() {
-    return this.sev(Rfc5424Rule.SEVERITY_NUM.Crit);
-
-  }
-
-  /**
-   * ログレベルをalertに設定する。
-   * @returns {SyslogStmt}
-   */
-  alert() {
-    return this.sev(Rfc5424Rule.SEVERITY_NUM.Alert);
-  }
-
-  /**
-   * ログレベルをerrに設定する。
-   * @returns {SyslogStmt}
-   */
-  err() {
-    return this.sev(Rfc5424Rule.SEVERITY_NUM.Err);
-  }
-
-  /**
-   * ログレベルをwarnに設定する。
-   * @returns {SyslogStmt}
-   */
-  warn() {
-    return this.sev(Rfc5424Rule.SEVERITY_NUM.Warn);
-  }
-
-  /**
-   * ログレベルをnoticeに設定する。
-   * @returns {SyslogStmt}
-   */
-  notice() {
-    return this.sev(Rfc5424Rule.SEVERITY_NUM.Notice);
-  }
-
-  /**
-   * ログレベルをinfoに設定する。
-   * @returns {SyslogStmt}
-   */
-  info() {
-    return this.sev(Rfc5424Rule.SEVERITY_NUM.Info);
-  }
-
-  /**
-   * ログレベルをdebugに設定する。
-   * @returns {SyslogStmt}
-   */
-  debug() {
-    return this.sev(Rfc5424Rule.SEVERITY_NUM.Debug);
   }
 
   /**
@@ -348,7 +124,7 @@ export class SyslogStmt {
    * @returns {boolean}
    */
   isOutput(level) {
-    return this.#severity <= level;
+    return this.severity <= level;
   }
 
 
@@ -364,4 +140,334 @@ export class SyslogStmt {
     }
     return result;
   }
+
+}
+
+
+export class SyslogStmtBuilder {
+  #header = null;
+  #facility = Rfc5424Rule.FACILITY_NUM.local0;
+  #severity = Rfc5424Rule.SEVERITY_NUM.Alert;
+  #timestamp = null;
+  #version = Rfc5424Rule.VERSION;
+  #hostname = Rfc5424Rule.NILVALUE;
+  #appname = Rfc5424Rule.NILVALUE;
+  #procId = Rfc5424Rule.NILVALUE;
+  #msgId = Rfc5424Rule.NILVALUE;
+  #structuredData = new MutableStructuredData();
+  #msg = "";
+
+
+  constructor() {
+  }
+
+  /**
+   * 
+   * @param {*} timestamp 
+   * @returns {SyslogStmtBuilder}
+   */
+  time(timestamp) {
+    this.#timestamp = timestamp;
+    return this;
+  }
+
+  /**
+   * 
+   * @param {number} facility 
+   * @returns {SyslogStmtBuilder}
+   */
+  fac(facility) {
+    this.#facility = facility;
+    return this;
+  }
+
+  /**
+   * 
+   * @param {number} severity 
+   * @returns {SyslogStmtBuilder}
+   */
+  sev(severity) {
+    this.#severity = severity;
+    return this;
+  }
+
+  /**
+   * ログレベルをemergに設定する。
+   * @returns {SyslogStmtBuilder}
+   */
+  emerg() {
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Emerg);
+  }
+
+  /**
+   * ログレベルをcritに設定する。
+   * @returns {SyslogStmtBuilder}
+   */
+  crit() {
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Crit);
+
+  }
+
+  /**
+   * ログレベルをalertに設定する。
+   * @returns {SyslogStmtBuilder}
+   */
+  alert() {
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Alert);
+  }
+
+  /**
+   * ログレベルをerrに設定する。
+   * @returns {SyslogStmtBuilder}
+   */
+  err() {
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Err);
+  }
+
+  /**
+   * ログレベルをwarnに設定する。
+   * @returns {SyslogStmtBuilder}
+   */
+  warn() {
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Warn);
+  }
+
+  /**
+   * ログレベルをnoticeに設定する。
+   * @returns {SyslogStmtBuilder}
+   */
+  notice() {
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Notice);
+  }
+
+  /**
+   * ログレベルをinfoに設定する。
+   * @returns {SyslogStmtBuilder}
+   */
+  info() {
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Info);
+  }
+
+  /**
+   * ログレベルをdebugに設定する。
+   * @returns {SyslogStmtBuilder}
+   */
+  debug() {
+    return this.sev(Rfc5424Rule.SEVERITY_NUM.Debug);
+  }
+
+  /**
+   * 
+   * @param {number} version 
+   * @returns {SyslogStmtBuilder}
+   */
+  ver(version) {
+    this.#version = version;
+    return this;
+  }
+
+  /**
+   * 
+   * @param {string} hostname 
+   * @returns {SyslogStmtBuilder}
+   */
+  host(hostname) {
+    this.#hostname = hostname;
+    return this;
+  }
+
+  /**
+   * 
+   * @param {string} appname 
+   * @returns {SyslogStmtBuilder}
+   */
+  app(appname) {
+    this.#appname = appname;
+    return this;
+  }
+
+  /**
+   * 
+   * @param {string} procId 
+   * @returns {SyslogStmtBuilder}
+   */
+  proc(procId) {
+    this.#procId = procId;
+    return this;
+  }
+
+  /**
+   * 
+   * @param {string} msgId 
+   * @returns {SyslogStmtBuilder}
+   */
+  msgId(msgId) {
+    this.#msgId = msgId;
+    return this;
+  }
+
+  /**
+   * 
+   * @param {StructuredData} sd 
+   * @returns {SyslogStmtBuilder}
+   */
+  sd(sd) {
+    this.#structuredData = sd;
+    return this;
+  }
+
+  /**
+   * 
+   * @param {string} msg 
+   * @returns {SyslogStmtBuilder}
+   */
+  msg(msg) {
+    this.#msg = msg;
+    return this;
+  }
+
+  cloneTemplate() {
+    const builder = new SyslogStmtBuilder()
+    builder.#facility = this.#facility;
+    builder.#severity = this.#severity;
+    builder.#version = this.#version;
+    builder.#timestamp = this.#timestamp;
+    builder.#hostname = this.#hostname;
+    builder.#appname = this.#appname;
+    builder.#procId = this.#procId;
+    builder.#msgId = this.#msgId;
+    builder.#structuredData = this.#structuredData;
+    builder.#msg = this.#msg;
+    return builder;
+  }
+
+  /**
+   * 
+   * @returns {SyslogStmt}
+   */
+  build() {
+    const fac = this.#facility;
+    const sev = this.#severity;
+    const ver = this.#version;
+    const host = this.#hostname;
+    const app = this.#appname;
+    const proc = this.#procId;
+    const msgId = this.#msgId;
+    const time = this.#timestamp;
+    const structuredData = this.#structuredData instanceof StructuredData ? this.#structuredData.freeze() : this.#structuredData;
+    const msg = this.#msg;
+    const header = new SyslogStmtHeader(fac, sev, ver, time, host, app, proc, msgId);
+    return new SyslogStmt(header, structuredData, msg);
+  }
+}
+
+
+
+export class SyslogStmt {
+  #header = null;
+  #structuredData = null;
+  #msg = "";
+
+  constructor(header, structuredData = Rfc5424Rule.NILVALUE, msg = "") {
+    this.#header = header;
+    structuredData = structuredData ?? Rfc5424Rule.NILVALUE;
+    if (typeof structuredData === 'string') {
+      if (structuredData !== Rfc5424Rule.NILVALUE) {
+        throw new Error(`Invalid structuredData: ${structuredData}`);
+      }
+      this.#structuredData = structuredData;
+    } else if (structuredData instanceof StructuredData) {
+      this.#structuredData = structuredData;
+    } else {
+      throw new Error(`Invalid structuredData: ${structuredData}`);
+    }
+
+    this.#msg = msg;
+
+  }
+
+
+  /**
+   * PRI値を取得する。
+   * @returns {number}
+   */
+  get pri() {
+    return this.#header.pri;
+  }
+
+  /**
+   * バージョン番号を取得する
+   * @returns {string}
+   */
+  get version() {
+    return this.#header.version;
+  }
+
+  /**
+   * タイムスタンプを取得する
+   * @returns {Date}
+   */
+  get timestamp() {
+    return this.#header.timestamp;
+  }
+
+  /**
+   * ホスト名を取得する。
+   * @returns {string}
+   */
+  get hostname() {
+    return this.#header.hostname;
+  }
+
+  /**
+   * アプリケーション名を取得する。
+   * @returns {string}
+   */
+  get appname() {
+    return this.#header.appname;
+  }
+
+
+  /**
+   * プロセスIDを取得する。
+   * @returns {string}
+   */
+  get procId() {
+    return this.#header.procId;
+  }
+
+
+  /**
+   * メッセージIDを取得する。
+   * @returns {string}
+   */
+  get messageId() {
+    return this.#header.msgId;
+  }
+
+  /**
+   * 構造化データを取得する。
+   * @returns {StructuredData | string}
+   */
+  get structuredData() {
+    return this.#structuredData;
+  }
+
+  /**
+   * メッセージを取得する。
+   * @returns {string}
+   */
+  get msg() {
+    return this.#msg;
+  }
+
+  /**
+   * 指定したログレベルが現在の重大度以上であるかを判定する。
+   * @param {number} level 
+   * @returns {boolean}
+   */
+  isOutput(level) {
+    return this.#header.isOutput(level);
+  }
+
 }
