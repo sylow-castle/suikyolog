@@ -9,11 +9,15 @@ import { TransporterBuilder } from "../src/core/TransporterBuilder.js";
 import { ConsoleWriter } from "../src/core/ConsoleWriter.js";
 import { NullTransporter } from "../src/core/NullTransporter.js";
 import { NullWriter } from "../src/core/Writer.js";
+import fs from "node:fs";
+import { SimpleSyncFileWriter } from "../src/node/FileWriter.js";
+
+let writer = null;
 
 const encoder = new SyslogEncoder();
 const logger = new ConsoleLogger(TransporterBuilder.start(7)
   .encodedBy(new SyslogEncoder())
-  .write(new StdoutWriter())
+  .write(writer = new SimpleSyncFileWriter({ path: "test.txt" }))
   .end());
 const VOLUME = 100000;
 const startTime = performance.now();
@@ -24,8 +28,11 @@ structuredData.add("testSdId", "testKey", "testValue")
 structuredData = structuredData.freeze();
 
 for (let i = 0; i < VOLUME; i++) {
-  const stmt = new SyslogStmtBuilder().msg(`test_${i}`).sd(structuredData).build();
+  const stmt = new SyslogStmtBuilder().sev(3).msg(`test_${i}`).sd(structuredData).build();
   logger.info(stmt);
 }
+writer.end();
+await writer.finished();
 const endTime = performance.now();
 console.log(`Time: ${endTime - startTime}`);
+//console.log(writer.getLogs().length);

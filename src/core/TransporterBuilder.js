@@ -1,20 +1,44 @@
 import { FilterTransporter } from "./FilterTransporter.js";
 import { FanoutTransporter } from "./FanoutTransporter.js";
+import { Transporter } from "./Transporter.js";
 
 export class TransporterBuilder {
   #first = null
   #transporters = null;
+  #eventTarget = null;
 
+  constructor(eventTarget = new EventTarget()) {
+    this.#eventTarget = eventTarget;
+  }
+
+  static build(callback, eventTarget = new EventTarget()) {
+    const builder = new TransporterBuilder(eventTarget);
+    builder.#eventTarget = eventTarget;
+
+    if (typeof callback === "function") {
+      return callback(builder);
+    }
+  }
 
   /**
-   * @param 最初に設定するログレベルフィルターのレベル
+   * @param {number} 最初に設定するログレベルフィルターのレベル
    * @returns {TransporterBuilder}
    */
-  static start(level) {
-    const result = new TransporterBuilder();
+  static start(level, eventTarget = new EventTarget()) {
+    const result = new TransporterBuilder(eventTarget);
     result.#transporters = [];
-    result.filter((syslogStmt) => { return syslogStmt.isOutput(level) });
+    result.filter(syslogStmt => syslogStmt.isOutput(level));
     return result;
+  }
+
+  /**
+   * @param {number} level 最初に設定するログレベルフィルターのレベル
+   * @returns {TransporterBuilder}
+   */
+  start(level) {
+    this.#transporters = [];
+    this.filter(syslogStmt => syslogStmt.isOutput(level));
+    return this;
   }
 
   /**
@@ -28,12 +52,13 @@ export class TransporterBuilder {
    * @returns {TransporterBuilder}
    */
   filter(condition) {
+    const next = new FilterTransporter(condition)
+    next.setEventTarget(this.#eventTarget);
+
     if (this.#transporters.length === 0) {
-      const next = new FilterTransporter(condition)
       this.#first = next;
       this.#transporters.push(next);
     } else {
-      const next = new FilterTransporter(condition)
       const current = this.#transporters.pop();
       current.setNext(next);
       this.#transporters.push(current);
@@ -56,7 +81,7 @@ export class TransporterBuilder {
   encodedBy(encoder) {
     const last = this.#transporters.pop();
     this.#transporters.push(last);
-    return new CompiledTransporterBuilder(this.#first, last, encoder);
+    return new CompiledTransporterBuilder(this.#first, last, encoder, this.#eventTarget);
   }
 
   /**
@@ -64,23 +89,34 @@ export class TransporterBuilder {
    * @returns {FanoutTransporterBuilder}
    */
   fanout(callback) {
-    const builder = new FanoutTransporterBuilder();
+    const builder = new FanoutTransporterBuilder(this.#eventTarget);
     callback(builder);
 
     const fanoutTransporter = builder.build();
-
     const current = this.#transporters.pop();
     current.setNext(fanoutTransporter);
     this.#transporters.push(current);
     this.#transporters.push(fanoutTransporter);
 
-    return new FinishedTransporterBuilder(this.#first);
+    return new FinishedTransporterBuilder(this.#first, this.#eventTarget);
   }
 
 }
 
 export class FanoutTransporterBuilder {
   #children = [];
+  #eventTarget = null;
+
+  /**
+   * @param {EventTarget} eventTarget
+   */
+  constructor(eventTarget) {
+    this.#eventTarget = eventTarget;
+  }
+
+  start(level) {
+    return TransporterBuilder.start(level, this.#eventTarget);
+  }
 
   /**
    * 
@@ -88,7 +124,12 @@ export class FanoutTransporterBuilder {
    * @returns {FanoutTransporterBuilder}
    */
   add(child) {
-    this.#children.push(child);
+    const transporter = child?.transporter ?? child;
+    if (transporter instanceof Transporter) {
+      this.#children.push(transporter);
+    } else {
+      throw new Error(`child is not a Transporter: ${transporter}`);
+    }
     return this;
   }
 
@@ -97,6 +138,7 @@ export class FanoutTransporterBuilder {
    */
   build() {
     const fanout = new FanoutTransporter(this.#children);
+    fanout.setEventTarget(this.#eventTarget);
     return fanout;
   }
 
@@ -110,6 +152,7 @@ class CompiledTransporterBuilder {
   #encoder = null;
   #first = null;
   #last = null;
+  #eventTarget = null;
 
   /**
    * 
@@ -117,12 +160,13 @@ class CompiledTransporterBuilder {
    * @param {Transporter} last 
    * @param { Encoder<T> | EncoderFunc<T> } encoder 
    */
-  constructor(first, last, encoder) {
+  constructor(first, last, encoder, eventTarget) {
     this.#first = first;
     this.#last = last;
+    this.#eventTarget = eventTarget;
 
     if (typeof encoder === "function") {
-      encoder = (syslogStmt) => { return encoder(syslogStmt) };
+      encoder = syslogStmt => encoder(syslogStmt);
     }
     this.#encoder = encoder;
   }
@@ -136,24 +180,27 @@ class CompiledTransporterBuilder {
   write(writer) {
     const current = this.#last;
     writer.setEncoder(this.#encoder);
+    writer.setEventTarget(this.#eventTarget);
     this.#last.setNext(writer);
-    return new FinishedTransporterBuilder(this.#first);
+    return new FinishedTransporterBuilder(this.#first, this.#eventTarget);
   }
-
 
 }
 
 class FinishedTransporterBuilder {
   #first = null
+  #eventTarget = null;
 
-  constructor(first) {
+  constructor(first, eventTarget) {
     this.#first = first;
+    this.#eventTarget = eventTarget;
+    this.#first.setEventTarget(eventTarget);
   }
 
   /**
    * @returns {Transporter}
    */
   end() {
-    return this.#first;
+    return { transporter: this.#first, eventTarget: this.#eventTarget };
   }
 }

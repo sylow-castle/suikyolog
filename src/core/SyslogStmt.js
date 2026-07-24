@@ -386,6 +386,13 @@ export class SyslogStmt {
 
   }
 
+  get fac() {
+    return this.#header.facility;
+  }
+
+  get sev() {
+    return this.#header.severity;
+  }
 
   /**
    * PRI値を取得する。

@@ -48,11 +48,30 @@ export class Writer extends Transporter {
   setEncoder(encoder) {
     this[_encoder] = encoder
   }
+
+  /**
+   * イベントリスナーを登録する
+   * @param {string|symbol} type 
+   * @param {Function} listener 
+   */
+  addEventListener(type, listener) {
+    this._getEventTarget().addEventListener(type, listener);
+  }
+
+  /**
+   * イベントリスナーを削除する
+   * @param {string|symbol} type 
+   * @param {Function} listener 
+   */
+  removeEventListener(type, listener) {
+    this._getEventTarget().removeEventListener(type, listener);
+  }
+
 }
 
 export class NullWriter extends Writer {
   #config = {};
-
+  #eventTarget = null;
 
   /**
    * 

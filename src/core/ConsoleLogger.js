@@ -33,9 +33,11 @@ const LOG_LEVELS = Object.freeze([
 export class ConsoleLogger {
   #template = new SyslogStmtBuilder();
   #transporter = null;
+  #eventTarget = null;
 
   #errorHandler = doNothing;
   #isMute = false;
+  #isEnded = false;
 
   static {
     for (const level of LOG_LEVELS) {
@@ -45,13 +47,20 @@ export class ConsoleLogger {
     }
   }
 
-  constructor(transporter) {
-    if (!(transporter instanceof Transporter)) {
-      throw new Error(`invalid transporter: ${transporter}`);
+  constructor(config) {
+    const transporter = config.transporter;
+    const eventTarget = config.eventTarget;
+
+    if (transporter instanceof Transporter && eventTarget instanceof EventTarget) {
+      this.#transporter = transporter;
+      this.#eventTarget = eventTarget;
+    } else {
+      if (!(transporter instanceof Transporter)) {
+        throw new Error(`invalid transporter: ${transporter}`);
+      } else {
+        throw new Error(`invalid eventTarget: ${eventTarget}`);
+      }
     }
-    this.#transporter = transporter;
-
-
   }
 
   #dispatchLog(levelStr, syslogStmt) {
@@ -62,7 +71,15 @@ export class ConsoleLogger {
     if (typeof syslogStmt === "string") {
       finalStmt = this.#template.sev(sevNum).msg(syslogStmt).build();
     } else if (syslogStmt instanceof SyslogStmt) {
-      finalStmt = syslogStmt;
+      finalStmt = this.#template.cloneTemplate()
+        .sev(sevNum)
+        .fac(syslogStmt.fac)
+        .host(syslogStmt.host)
+        .app(syslogStmt.app)
+        .proc(syslogStmt.proc)
+        .msgId(syslogStmt.msgId)
+        .sd(syslogStmt.sd)
+        .msg(syslogStmt.msg).build()
     } else if (syslogStmt instanceof Error) {
       finalStmt = this.#template.sev(upper).msg(syslogStmt.message + "\n" + syslogStmt.stack).build();
     } else {
@@ -172,9 +189,10 @@ export class ConsoleLogger {
    * @param {SyslogStmt} syslogStmt 
    */
   log(syslogStmt) {
-    if (this.#isMute) {
+    if (this.#isMute || this.#isEnded) {
       return;
     }
+
     try {
       this.#transporter.transport(syslogStmt);
     } catch (err) {
@@ -198,6 +216,13 @@ export class ConsoleLogger {
   resume() {
     this.#isMute = false;
     return this;
+  }
+
+  flush() {
+    this.#eventTarget.addEventListener("flushed", () => {
+      this.#isEnded = true;
+    });
+    this.#eventTarget.dispatchEvent(new CustomEvent("flush"));
   }
 }
 

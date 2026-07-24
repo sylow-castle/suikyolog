@@ -41,20 +41,20 @@ export class StderrWriter extends Writer {
  */
 export class PosixWriter {
   static create() {
-    return TransporterBuilder.start(7)
-      .fanout(f => 
-        f.add(TransporterBuilder
-          .start(3)
-          .encodedBy(new SyslogEncoder())
-          .write(new StderrWriter())
-          .end()
-        ).add(TransporterBuilder
-          .start(7)
-          .filter(stmt => (stmt.pri % 8) > 3)
-          .encodedBy(new SyslogEncoder())
-          .write(new StdoutWriter())
-          .end()
-        )
-    ).end();
+    return TransporterBuilder.build(b => {
+      return b.start(7)
+        .fanout(f =>
+          f.add(f.start(3)
+            .encodedBy(new SyslogEncoder())
+            .write(new StderrWriter())
+            .end()
+          ).add(f.start(7)
+            .filter(stmt => (stmt.pri % 8) > 3)
+            .encodedBy(new SyslogEncoder())
+            .write(new StdoutWriter())
+            .end()
+          )
+        ).end();
+    });
   }
 }

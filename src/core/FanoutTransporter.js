@@ -8,19 +8,13 @@ export class FanoutTransporter extends Transporter {
    * @typee Array<Transporter>
    */
   #children = [];
-  #strategy = null;
+  #eventTarget = null;
 
   /**
    * @param {Array<Transporter>} transporters 
-   * @param {"all"|"allSettled"|"race"|"any"} [strategyName="all"]
    */
-  constructor(transporters, strategyName = "all") {
+  constructor(transporters) {
     super();
-    this.#strategy = Promise[strategyName];
-    if (typeof this.#strategy !== "function") {
-      throw Error(`Invalid strategyName: ${strategyName}`)
-    }
-
     for (const tp of transporters) {
       this.#children.push(tp);
     }
@@ -32,26 +26,13 @@ export class FanoutTransporter extends Transporter {
    * @param {SyslogStmt} payload 
    * @throws Error 何番目で失敗したかを示すメッセージとcauseに原因となったerrオブジェクトが入っています。
    */
-  async transport(payload) {
-    /*
-    for(let index = 0; index < this.#transporters.length; index++) {
-      try{ 
-        this.#transporters[index].transport(payload);
-      } catch {
-        throw new Error(`Transporter {${index} faild: ${err.message}`, { cause: err });
-      }
-    }
-    */
-
-    const promises = this.#children.map((transporter, index) => {
+  transport(payload) {
+    this.#children.map((transporter, index) => {
       try {
         return transporter.transport(payload);
       } catch (err) {
         throw new Error(`Transporter {${index} faild: ${err.message}`, { cause: err });
       }
     });
-
-    return this.#strategy.call(Promise, promises);
-
   }
 }

@@ -7,6 +7,7 @@ import { SyslogStmt } from "./SyslogStmt.js";
  */
 export class Transporter {
   #next = null;
+  #eventTarget = null;
 
   constructor() {
     if (new.target === Transporter) {
@@ -26,12 +27,28 @@ export class Transporter {
   }
 
   /**
+   * イベントターゲットを設定する。
+   * @param {EventTarget} eventTarget 
+   */
+  setEventTarget(eventTarget) {
+    if (!(eventTarget instanceof EventTarget)) {
+      throw new Error(`invalid eventTarget: ${eventTarget}`);
+    }
+    this.#eventTarget = eventTarget;
+  }
+
+  _getEventTarget() {
+    return this.#eventTarget;
+  }
+
+  /**
    * 次のトランスポータを設定する
    * @param {Transporter} next 
    */
   setNext(next) {
     this.#next = next;
   }
+
 
   /**
    * 
