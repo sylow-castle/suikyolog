@@ -12,6 +12,7 @@ export class SimpleSyncFileWriter extends Writer {
    * @type {FileStreamWriter}
    */
   #innerWriter = null;
+  #isEnding = false;
   /**
    * 
    * @param {object} config
@@ -65,12 +66,15 @@ export class SimpleSyncFileWriter extends Writer {
 
 class FileStreamWriter extends Writable {
   #fileHandle = null;
+  #path = null;
 
   constructor(path, eventTarget, options = {}) {
     super({
       highWaterMark: options.highWaterMark || 16 * 1024,
       ...options
     });
+
+    this.#path = path;
   }
 
   _construct(callback) {
@@ -85,18 +89,10 @@ class FileStreamWriter extends Writable {
   }
 
   _write(chunk, encoding, callback) {
-    if (!this.#eventTarget) {
-      callback(new Error("EventTarget is not set"));
-    }
-
     fs.write(this.#fileHandle, chunk, callback);
   }
 
   _writev(chunks, callback) {
-    if (!this.#eventTarget) {
-      callback(new Error("EventTarget is not set"));
-    }
-
     const buffers = chunks.map(item => item.chunk);
     const combined = Buffer.concat(buffers);
 
