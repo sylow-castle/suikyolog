@@ -1,7 +1,9 @@
 import { Writer } from "../core/Writer.js";
 import { Writable } from "node:stream";
-import { finished } from "node:stream/promises";
+import { finished } from "node:stream/promises"; EventType
+import { BackpressureStrategy } from "./BackpressureStrategy.js";
 import fs from "fs";
+import * as EventType from "../core/EventType.js";
 
 /**
  * 
@@ -12,7 +14,9 @@ export class SimpleSyncFileWriter extends Writer {
    * @type {FileStreamWriter}
    */
   #innerWriter = null;
-  #isEnding = false;
+  #isClosed = false;
+  #backpressureStrategy = BackpressureStrategy.Wait();
+
   /**
    * 
    * @param {object} config
@@ -21,36 +25,44 @@ export class SimpleSyncFileWriter extends Writer {
   constructor(config) {
     super(config);
     this.#innerWriter = new FileStreamWriter(config.path);
-    this.#innerWriter.on("error", err => {
-      this._getEventTarget().dispatchEvent(new CustomEvent("error", { detail: err }));
+    this.#innerWriter.on(EventType.ERROR, err => {
+      this._getEventTarget().dispatchEvent(new CustomEvent(EventType.ERROR, { detail: err }));
     });
   }
 
   /**
-   * イベントターゲットを設定しま す
+   * イベントターゲットを設定します
    * @override
    * @param {EventTarget} eventTarget 
    */
   setEventTarget(eventTarget) {
     super.setEventTarget(eventTarget);
 
-    this._getEventTarget().addEventListener("flush", async () => {
-      if (this.#isEnding) {
+    this._getEventTarget().addEventListener(EventType.CLOSE, async () => {
+      if (this.#isClosed) {
         return;
       }
-      this.#isEnding = true;
+      this.#isClosed = true;
       this.#innerWriter.end();
       await finished(this.#innerWriter);
-      this._getEventTarget().dispatchEvent(new CustomEvent("flushed"));
+      this._getEventTarget().dispatchEvent(new CustomEvent(EventType.CLOSED));
     })
 
   }
 
   write(data) {
     try {
-      this.#innerWriter.write(data + '\n');
+      if (!this.#backpressureStrategy.isShouldWrite()) {
+        return;
+      }
+
+      const canContinue = this.#innerWriter.write(data + '\n');
+      if (!canContinue) {
+        this.#backpressureStrategy.handleBackpressure(this.#innerWriter, this._getEventTarget());
+      }
+
     } catch (err) {
-      this._getEventTarget().dispatchEvent(new CustomEvent("error", { detail: err }));
+      this._getEventTarget().dispatchEvent(new CustomEvent(EventType.ERROR, { detail: err }));
     }
   }
 
@@ -70,7 +82,7 @@ class FileStreamWriter extends Writable {
 
   constructor(path, eventTarget, options = {}) {
     super({
-      highWaterMark: options.highWaterMark || 16 * 1024,
+      highWaterMark: options.highWaterMark ?? 64 * 1024,
       ...options
     });
 
@@ -94,9 +106,8 @@ class FileStreamWriter extends Writable {
 
   _writev(chunks, callback) {
     const buffers = chunks.map(item => item.chunk);
-    const combined = Buffer.concat(buffers);
 
-    fs.write(this.#fileHandle, combined, callback);
+    fs.writev(this.#fileHandle, buffers, callback);
   }
 
   _destroy(err, callback) {
