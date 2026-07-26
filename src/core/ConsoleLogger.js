@@ -3,7 +3,7 @@ import { ConsoleWriter } from "./ConsoleWriter.js";
 import { FACILITY_NUM, NILVALUE, SEVERITY_NUM } from "./Rfc5424Rule.js";
 import { Transporter } from "./Transporter.js";
 import { MutableStructuredData } from "./StructuredData.js";
-
+import * as EventType from "./EventType.js";
 
 const LOG_LEVELS = Object.freeze([
   "emerg",
@@ -74,6 +74,7 @@ export class ConsoleLogger {
       finalStmt = this.#template.cloneTemplate()
         .sev(sevNum)
         .fac(syslogStmt.fac)
+        .time(syslogStmt.timestamp)
         .host(syslogStmt.host)
         .app(syslogStmt.app)
         .proc(syslogStmt.proc)
@@ -218,11 +219,15 @@ export class ConsoleLogger {
     return this;
   }
 
-  flush() {
-    this.#eventTarget.addEventListener("flushed", () => {
+  close() {
+    this.#eventTarget.addEventListener(EventType.CLOSED, () => {
       this.#isEnded = true;
     });
-    this.#eventTarget.dispatchEvent(new CustomEvent("flush"));
+    this.#eventTarget.dispatchEvent(new CustomEvent(EventType.CLOSE));
+  }
+
+  addEventListener(type, listener) {
+    this.#eventTarget.addEventListener(type, listener);
   }
 }
 

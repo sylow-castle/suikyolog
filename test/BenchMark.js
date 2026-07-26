@@ -11,13 +11,14 @@ import { NullTransporter } from "../src/core/NullTransporter.js";
 import { NullWriter } from "../src/core/Writer.js";
 import fs from "node:fs";
 import { SimpleSyncFileWriter } from "../src/node/FileWriter.js";
+import * as EventType from "../src/core/EventType.js";
 
 let writer = null;
 
 const encoder = new SyslogEncoder();
 const logger = new ConsoleLogger(TransporterBuilder.start(7)
   .encodedBy(new SyslogEncoder())
-  .write(writer = new SimpleSyncFileWriter({ path: "test.txt" }))
+  .write(writer = new SimpleSyncFileWriter({ path: "tmp/test.txt" }))
   .end());
 const VOLUME = 100000;
 const startTime = performance.now();
@@ -27,12 +28,27 @@ structuredData.add("testSdId", "testKey", "testValue")
   .add("testSdId2", "testKey2", "testValue");
 structuredData = structuredData.freeze();
 
+let drainPromise = null;
+logger.addEventListener(EventType.BACKPRESSURE, async (event) => {
+  if (!drainPromise) {
+    console.error(`wait until drain: ${performance.now()}`);
+    drainPromise = event.detail.waitUntilDrain().then(() => {
+      console.error(`release from backpressure: ${performance.now()}`);
+      drainPromise = null;
+    });
+  }
+});
+
+
 for (let i = 0; i < VOLUME; i++) {
+  if (drainPromise) {
+    await drainPromise;
+  }
+
   const stmt = new SyslogStmtBuilder().sev(3).msg(`test_${i}`).sd(structuredData).build();
   logger.info(stmt);
 }
-writer.end();
-await writer.finished();
+logger.close();
 const endTime = performance.now();
 console.log(`Time: ${endTime - startTime}`);
 //console.log(writer.getLogs().length);

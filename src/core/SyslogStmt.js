@@ -145,7 +145,6 @@ export class SyslogStmtHeader {
 
 
 export class SyslogStmtBuilder {
-  #header = null;
   #facility = Rfc5424Rule.FACILITY_NUM.local0;
   #severity = Rfc5424Rule.SEVERITY_NUM.Alert;
   #timestamp = null;
@@ -154,6 +153,7 @@ export class SyslogStmtBuilder {
   #appname = Rfc5424Rule.NILVALUE;
   #procId = Rfc5424Rule.NILVALUE;
   #msgId = Rfc5424Rule.NILVALUE;
+
   #structuredData = new MutableStructuredData();
   #msg = "";
 
