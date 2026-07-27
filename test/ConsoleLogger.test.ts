@@ -75,9 +75,8 @@ describe("ConsoleLoggerクラスのテスト", () => {
     const now = new Date();
     const stmt = logger.createSyslogStmt("test message", null, now);
     const encoder = new SyslogEncoder();
-    const BOM = "\uFEFF";
 
-    expect(encoder.encode(stmt)).toBe(`<161>0 ${now.toISOString()} localhost suikyo testConsoleLogger test - ${BOM}test message`);
+    expect(encoder.encode(stmt)).toBe(`<161>0 ${now.toISOString()} localhost suikyo testConsoleLogger test - test message`);
   });
 
   test(`stopすると何も出力しない。resumeすると再び出力する`, () => {

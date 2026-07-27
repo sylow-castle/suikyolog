@@ -27,13 +27,24 @@ export class Encoder {
     // \x0E-\x1F: SO～US
     // \x7F: DEL
     // \u200B-\u200F,\uFEFF, \uFFFE, \uFFFF：非文字
-    return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\p{Cc}\p{Cf}\u200B-\u200F\uFEFF\uFFFE\uFFFF]/gu, Encoder.escapeReplacer);
+    const invalidCharRegex = /[^\p{L}\p{N}\p{P}\p{S}\p{Z}]/gu
+    return str.replace(invalidCharRegex, Encoder.escapeReplacer);
   }
+
 
   static escapeReplacer(match) {
     const char = match.charCodeAt(0);
     if (char === 9 || char === 10 || char === 13) {
-      return match;
+      switch (char) {
+        case 9:
+          return "\\t"
+
+        case 10:
+          return "\\n"
+
+        case 13:
+          return "\\r"
+      }
     } else {
       if (char <= 127) {
         const code = char.toString(16).toUpperCase().padStart(2, '0');

@@ -8,14 +8,9 @@ describe("Encoderクラスのテスト", () => {
   });
 
   test.for([
-    { ctrl: "\x09", ret: "\t" },
-    { ctrl: "\x0A", ret: "\n" },
-    { ctrl: "\x0D", ret: "\r" },
-  ])(`制御文字をエスケープしない（TAB、LF、CR）ctrl ：$escaped`, ({ ctrl, ret }) => {
-    expect(Encoder.escapeControlChars(ctrl)).toBe(ret);
-  });
-
-  test.for([
+    { ctrl: "\x09", ret: "\\t" },
+    { ctrl: "\x0A", ret: "\\n" },
+    { ctrl: "\x0D", ret: "\\r" },
     { ctrl: "\x00", ret: "\\x00" },
     { ctrl: "\x08", ret: "\\x08" },
     { ctrl: "\x0B", ret: "\\x0B" },
@@ -28,7 +23,7 @@ describe("Encoderクラスのテスト", () => {
     { ctrl: "\uFEFF", ret: "\\uFEFF" },
     { ctrl: "\uFFFE", ret: "\\uFFFE" },
     { ctrl: "\uFFFF", ret: "\\uFFFF" },
-  ])(`制御文字をエスケープする（TAB、LF、CRを除く）ctrl ：$ret`, ({ ctrl, ret }) => {
+  ])(`制御文字をエスケープする（ctrl ：$ret）`, ({ ctrl, ret }) => {
     expect(Encoder.escapeControlChars(ctrl)).toBe(ret);
   });
 });

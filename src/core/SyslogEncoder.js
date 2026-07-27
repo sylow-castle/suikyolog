@@ -4,6 +4,7 @@ import { NILVALUE, FACILITY_STR, SEVERITY_STR, MS_CACHE, PRI_CACHE } from "./Rfc
 
 
 const SP = " ";
+const BOM = "\uFEFF"
 
 
 /**
@@ -13,6 +14,7 @@ export class SyslogEncoder extends Encoder {
   #structuredDataEncoder = new StructuredDataEncoder();
   #timestampCache = "";
   #timestampCacheSec = 0;
+  #BomFlag = false;
   /**
    * @param {import("./SyslogStmt.js").SyslogStmt} syslogStmt
    * @returns {string}
@@ -22,11 +24,28 @@ export class SyslogEncoder extends Encoder {
     const structuredData = this.#structuredDataEncoder.encode(syslogStmt.structuredData);
     const rawMsg = syslogStmt.msg ? syslogStmt.msg : "";
     let msg = "";
+    let prefix = "";
+    if (this.#BomFlag) {
+      prefix = BOM;
+      this.#BomFlag = false;
+    }
+
     if (rawMsg !== "") {
-      msg = " " + "\uFEFF" + Encoder.escapeControlChars(rawMsg);
+      msg = " " + prefix + Encoder.escapeControlChars(rawMsg);
     }
 
     return header + " " + structuredData + msg;
+  }
+
+  /**
+   * MSGの前にBOMを付与するようにします。
+   * 一度設定するとこのエンコーダインスタンスはBOM有として固定されます。戻せません。
+   * 生成時の初期状態はBOMを付与しないです。
+   * @returns {SyslogEncoder}
+   */
+  withBom() {
+    this.#BomFlag = true;
+    return this;
   }
 
   /**

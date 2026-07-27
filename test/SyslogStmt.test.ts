@@ -21,7 +21,7 @@ describe("SyslogStmtクラスのテスト", () => {
       .app("suikyo")
       .proc("testSyslogStmt")
       .msgId("rfc5424").build();
-    const encoder = new SyslogEncoder();
+    const encoder = new SyslogEncoder().withBom();
 
     expect(encoder.encode(stmt)).toBe(`<162>1 2026-07-12T23:20:19.423Z localhost suikyo testSyslogStmt rfc5424 - ${BOM}test message`);
   });
@@ -38,7 +38,7 @@ describe("SyslogStmtクラスのテスト", () => {
       .proc(undefined as any)
       .msgId(undefined as any)
       .sd(sd).build();
-    const encoder = new SyslogEncoder();
+    const encoder = new SyslogEncoder().withBom();
     const sdEncoder = new StructuredDataEncoder();
     const sdStr = sdEncoder.encode(sd);
 
@@ -62,9 +62,9 @@ describe("SyslogStmtクラスのテスト", () => {
     const encoder = new SyslogEncoder();
 
     //初期値は重大度1
-    expect(encoder.encode(stmt)).toBe(`<129>1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
+    expect(encoder.encode(stmt)).toBe(`<129>1 ${now.toISOString()} - - - - - ${testMessage}`);
     stmt = builder[severity]().build();
-    expect(encoder.encode(stmt)).toBe(`<${expectPri}>1 ${now.toISOString()} - - - - - ${BOM}${testMessage}`);
+    expect(encoder.encode(stmt)).toBe(`<${expectPri}>1 ${now.toISOString()} - - - - - ${testMessage}`);
   });
 
   test.for([
@@ -153,31 +153,5 @@ describe("SyslogStmtクラスのテスト", () => {
     expect(() => stmt.sd(invalidSd as any).build()).toThrow(/Invalid structuredData:/);
   });
 
-
-
-  test.for([
-    { ctrl: "\x09", ret: "\t" },
-    { ctrl: "\x0A", ret: "\n" },
-    { ctrl: "\x0D", ret: "\r" },
-  ])(`制御文字をエスケープしない（TAB、LF、CR）ctrl ：$escaped`, ({ ctrl, ret }) => {
-    expect(Encoder.escapeControlChars(ctrl)).toBe(ret);
-  });
-
-  test.for([
-    { ctrl: "\x00", ret: "\\x00" },
-    { ctrl: "\x08", ret: "\\x08" },
-    { ctrl: "\x0B", ret: "\\x0B" },
-    { ctrl: "\x0C", ret: "\\x0C" },
-    { ctrl: "\x0E", ret: "\\x0E" },
-    { ctrl: "\x1F", ret: "\\x1F" },
-    { ctrl: "\x7F", ret: "\\x7F" },
-    { ctrl: "\u200B", ret: "\\u200B" },
-    { ctrl: "\u200F", ret: "\\u200F" },
-    { ctrl: "\uFEFF", ret: "\\uFEFF" },
-    { ctrl: "\uFFFE", ret: "\\uFFFE" },
-    { ctrl: "\uFFFF", ret: "\\uFFFF" },
-  ])(`制御文字をエスケープする（TAB、LF、CRを除く）ctrl ：$ret`, ({ ctrl, ret }) => {
-    expect(Encoder.escapeControlChars(ctrl)).toBe(ret);
-  });
 });
 
