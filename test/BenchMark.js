@@ -1,4 +1,4 @@
-import { ConsoleLogger } from "../src/core/ConsoleLogger.js";
+import { Logger } from "../src/core/Logger.js";
 import { SyslogEncoder } from "../src/core/SyslogEncoder.js";
 import { SimpleEncoder } from "../src/core/SimpleEncoder.js";
 import { SyslogStmt, SyslogStmtBuilder } from "../src/core/SyslogStmt.js";
@@ -16,7 +16,7 @@ import * as EventType from "../src/core/EventType.js";
 let writer = null;
 
 const encoder = new SyslogEncoder();
-const logger = new ConsoleLogger(TransporterBuilder.start(7)
+const logger = new Logger(TransporterBuilder.start(7)
   .encodedBy(new SyslogEncoder())
   .write(writer = new SimpleSyncFileWriter({ path: "tmp/test.txt" }))
   .end());

@@ -45,14 +45,12 @@ export class Encoder {
         case 13:
           return "\\r"
       }
+    } else if (char <= 127) {
+      const code = char.toString(16).toUpperCase().padStart(2, '0');
+      return `\\x${code}`;
     } else {
-      if (char <= 127) {
-        const code = char.toString(16).toUpperCase().padStart(2, '0');
-        return `\\x${code}`;
-      } else {
-        const code = char.toString(16).toUpperCase().padStart(4, '0');
-        return `\\u${code}`;
-      }
+      const code = char.toString(16).toUpperCase().padStart(4, '0');
+      return `\\u${code}`;
     }
   }
 }

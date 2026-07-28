@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { ConsoleLogger } from '../src/core/ConsoleLogger.js';
+import { Logger } from '../src/core/Logger.js';
 import { SyslogStmtBuilder } from '../src/core/SyslogStmt.js';
 import { SimpleEncoder } from '../src/core/SimpleEncoder.js';
 import { SyslogEncoder } from '../src/core/SyslogEncoder.js';
@@ -7,12 +7,12 @@ import { SEVERITY_NUM } from '../src/core/Rfc5424Rule.js';
 import { TransporterBuilder } from '../src/core/TransporterBuilder.js';
 import { ConsoleWriter } from '../src/core/ConsoleWriter.js';
 
-describe("ConsoleLoggerクラスのテスト", () => {
+describe("Loggerクラスのテスト", () => {
   test('内部的にはconsole.logを呼ぶ', () => {
     // console.log をスパイ（監視）する
     const spy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
-    const logger = new ConsoleLogger(TransporterBuilder
+    const logger = new Logger(TransporterBuilder
       .start(1)
       .encodedBy(new SimpleEncoder())
       .write(new ConsoleWriter())
@@ -33,7 +33,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
       .mockImplementation(() => { throw new Error('console log error') });
 
     const errorHandler = vi.fn();
-    const logger = new ConsoleLogger(
+    const logger = new Logger(
       TransporterBuilder.start(7)
         .encodedBy(new SyslogEncoder())
         .write(new ConsoleWriter({
@@ -65,7 +65,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
       .write(new ConsoleWriter())
       .end();
 
-    const logger = new ConsoleLogger(tp).ver(0)
+    const logger = new Logger(tp).ver(0)
       .fac(20)
       .host("localhost")
       .app("suikyo")
@@ -80,7 +80,7 @@ describe("ConsoleLoggerクラスのテスト", () => {
   });
 
   test(`stopすると何も出力しない。resumeすると再び出力する`, () => {
-    const logger = new ConsoleLogger(TransporterBuilder.start(SEVERITY_NUM.Debug)
+    const logger = new Logger(TransporterBuilder.start(SEVERITY_NUM.Debug)
       .encodedBy(new SyslogEncoder())
       .write(new ConsoleWriter())
       .end()

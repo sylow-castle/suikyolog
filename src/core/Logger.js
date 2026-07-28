@@ -19,18 +19,18 @@ const LOG_LEVELS = Object.freeze([
 /**
  * Syslog仕様に準拠したコンソールロガー
  * 
- * @class ConsoleLogger
+ * @class Logger
  * 
- * @method {ConsoleLogger} emerg(messageOrStmt: string | SyslogStmt | Error) - 最重要のエラーを出力する
- * @method {ConsoleLogger} alert(messageOrStmt: string | SyslogStmt | Error) - 即時対応が必要な警告を出力する
- * @method {ConsoleLogger} crit(messageOrStmt: string | SyslogStmt | Error) - 致命的なシステムエラーを出力する
- * @method {ConsoleLogger} err(messageOrStmt: string | SyslogStmt | Error) - 通常のエラーを出力する
- * @method {ConsoleLogger} warn(messageOrStmt: string | SyslogStmt | Error) - 警告を出力する
- * @method {ConsoleLogger} notice(messageOrStmt: string | SyslogStmt | Error) - 注意が必要な正常なイベントを出力する
- * @method {ConsoleLogger} info(messageOrStmt: string | SyslogStmt | Error) - 一般的な情報メッセージを出力する
- * @method {ConsoleLogger} debug(messageOrStmt: string | SyslogStmt | Error) - 開発用のデバッグ情報を出力する
+ * @method {Logger} emerg(messageOrStmt: string | SyslogStmt | Error) - 最重要のエラーを出力する
+ * @method {Logger} alert(messageOrStmt: string | SyslogStmt | Error) - 即時対応が必要な警告を出力する
+ * @method {Logger} crit(messageOrStmt: string | SyslogStmt | Error) - 致命的なシステムエラーを出力する
+ * @method {Logger} err(messageOrStmt: string | SyslogStmt | Error) - 通常のエラーを出力する
+ * @method {Logger} warn(messageOrStmt: string | SyslogStmt | Error) - 警告を出力する
+ * @method {Logger} notice(messageOrStmt: string | SyslogStmt | Error) - 注意が必要な正常なイベントを出力する
+ * @method {Logger} info(messageOrStmt: string | SyslogStmt | Error) - 一般的な情報メッセージを出力する
+ * @method {Logger} debug(messageOrStmt: string | SyslogStmt | Error) - 開発用のデバッグ情報を出力する
  */
-export class ConsoleLogger {
+export class Logger {
   #template = new SyslogStmtBuilder();
   #transporter = null;
   #eventTarget = null;
@@ -41,7 +41,7 @@ export class ConsoleLogger {
 
   static {
     for (const level of LOG_LEVELS) {
-      ConsoleLogger.prototype[level] = function (syslogStmt) {
+      Logger.prototype[level] = function (syslogStmt) {
         return this.#dispatchLog(level, syslogStmt)
       };
     }
@@ -135,7 +135,7 @@ export class ConsoleLogger {
   /**
    * ログのホスト名を設定する。
    * @param {string} hostname 
-   * @returns {ConsoleLogger}
+   * @returns {Logger}
    */
   host(hostname) {
     this.#template.host(hostname);
@@ -145,7 +145,7 @@ export class ConsoleLogger {
   /**
    * ログのアプリケーション名を設定する。
    * @param {string} appname 
-   * @returns {ConsoleLogger}
+   * @returns {Logger}
    */
   app(appname) {
     this.#template.app(appname);
@@ -155,7 +155,7 @@ export class ConsoleLogger {
   /**
    * ログのプロセスIDを設定する。
    * @param {string} procId 
-   * @returns {ConsoleLogger}
+   * @returns {Logger}
    */
   proc(procId) {
     this.#template.proc(procId);
@@ -165,7 +165,7 @@ export class ConsoleLogger {
   /**
    * ログのメッセージIDを設定する。
    * @param {string} msgId 
-   * @returns {ConsoleLogger}
+   * @returns {Logger}
    */
   msgId(msgId) {
     this.#template.msgId(msgId);
@@ -175,7 +175,7 @@ export class ConsoleLogger {
   /**
    * トランスポーターでの出力中にエラーが発生した場合に呼び出されるコールバックを設定する。
    * @param {(e: Error) => void} callback 
-   * @returns {ConsoleLogger}
+   * @returns {Logger}
    */
   onError(callback) {
     if (typeof callback !== 'function') {
@@ -203,7 +203,7 @@ export class ConsoleLogger {
 
   /**
    * ログ出力を停止します。
-   * @returns {ConsoleLogger}
+   * @returns {Logger}
    */
   stop() {
     this.#isMute = true;
@@ -212,7 +212,7 @@ export class ConsoleLogger {
 
   /**
    * ログ出力を再開します。
-   * @returns {ConsoleLogger}
+   * @returns {Logger}
    */
   resume() {
     this.#isMute = false;
