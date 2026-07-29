@@ -12,13 +12,15 @@ import { NullWriter } from "../src/core/Writer.js";
 import fs from "node:fs";
 import { SimpleSyncFileWriter } from "../src/node/FileWriter.js";
 import * as EventType from "../src/core/EventType.js";
+import { BufferedWriter } from "../src/core/BufferedWriter.js";
+import { SyncFileWriter } from "../src/node/SyncFileWriter.js";
 
-let writer = null;
-
+let writer = new SyncFileWriter({ path: "tmp/test.txt" });
+let outer = new BufferedWriter(writer, 2000, 1000, 64 * 1024)
 const encoder = new SyslogEncoder();
 const logger = new Logger(TransporterBuilder.start(7)
   .encodedBy(new SyslogEncoder())
-  .write(writer = new SimpleSyncFileWriter({ path: "tmp/test.txt" }))
+  .write(outer)
   .end());
 const VOLUME = 100000;
 const startTime = performance.now();
@@ -48,6 +50,9 @@ for (let i = 0; i < VOLUME; i++) {
   const stmt = new SyslogStmtBuilder().sev(3).msg(`test_${i}`).sd(structuredData).build();
   logger.info(stmt);
 }
+
+outer.close();
+writer.close();
 logger.close();
 const endTime = performance.now();
 console.log(`Time: ${endTime - startTime}`);
