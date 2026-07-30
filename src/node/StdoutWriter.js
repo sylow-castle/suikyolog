@@ -18,6 +18,10 @@ export class StdoutWriter extends Writer {
   write(frame) {
     stdout.write(frame + "\n");
   }
+
+  writeSync(frame) {
+    stdout.write(frame + "\n");
+  }
 }
 
 /**
@@ -32,6 +36,10 @@ export class StderrWriter extends Writer {
    * @throw Error 標準出力でエラーが発生した場合
    */
   write(frame) {
+    stderr.write(frame + "\n");
+  }
+
+  writeSync(frame) {
     stderr.write(frame + "\n");
   }
 }

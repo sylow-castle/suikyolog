@@ -42,6 +42,41 @@ export class Writer extends Transporter {
   }
 
   /**
+   * 同期での書き出し処理を記述します
+   * @param {string | byte[]} frame 
+   */
+  writeSync(frame) {
+    throw new Error("sync operation is unsupported")
+  }
+
+  /**
+   * バッファリングしている場合の書き出し処理を記述します
+   */
+  flush() {
+  }
+
+  /**
+   * バッファリングしている場合の同期での書き出し処理を記述します
+   */
+  flushSync() {
+  }
+
+  /**
+   * 同期書き込みをサポートするかを返却する
+   * @returns {boolean}
+   */
+  get canSync() {
+    return false;
+  }
+
+  /**
+   * リソース開放処理を記述します。
+   */
+  close() {
+
+  }
+
+  /**
    * エンコーダーを設定します
    * @param {Encoder} encoder 
    */
@@ -90,4 +125,36 @@ export class NullWriter extends Writer {
    */
   write(frame) {
   }
+
+  /**
+   * 何もしない
+   * @param {string | byte[]} frame 
+   */
+  writeSync(frame) {
+  }
+
+  /**
+   * 何もしない
+   */
+  flush() {
+  }
+
+  /**
+   * 何もしない
+   */
+  flushSync() {
+  }
+
+  /**
+   * 同期書き込みをサポートするかを返却する
+   * @returns {boolean}
+   */
+  get canSync() {
+    return false;
+  }
+
+  /**
+   * 何もしない
+   */
+  close() { }
 }

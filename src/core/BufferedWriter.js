@@ -96,12 +96,41 @@ export class BufferedWriter extends Writer {
     this.#resetTimer();
   }
 
+  /**
+   * バッファをフラッシュする
+   * 内部のwriterが同期書き込みをサポートしていない場合は何もしません
+   * @override
+   */
+  flushSync() {
+    if (this.#queue.length === 0) {
+      return;
+    }
+    if (!this.#inner.canSync) {
+      return;
+    }
+
+    this.#inner.writeSync(this.#queue.join('\n'));
+
+    this.#lastFlushTime = Date.now();
+    this.#currentQueueVolume = 0;
+    this.#queue = [];
+
+  }
+
+  get canSync() {
+    return this.#inner.canSync;
+  }
+
+  /**
+   * クローズ処理
+   */
   close() {
     this.flush();
     if (this.#timeoutId !== null) {
       clearTimeout(this.#timeoutId);
       this.#timeoutId = null;
     }
+    this.#inner.close?.();
   }
 
 }

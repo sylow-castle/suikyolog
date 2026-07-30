@@ -9,7 +9,7 @@ import * as EventType from "../core/EventType.js";
  * 
  * @implements {Writer}
  */
-export class SimpleSyncFileWriter extends Writer {
+export class StreamFileWriter extends Writer {
   /**
    * @type {FileStreamWriter}
    */
@@ -66,7 +66,7 @@ export class SimpleSyncFileWriter extends Writer {
     }
   }
 
-  end() {
+  close() {
     this.#innerWriter.end();
   }
 

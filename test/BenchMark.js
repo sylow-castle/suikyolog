@@ -10,17 +10,18 @@ import { ConsoleWriter } from "../src/core/ConsoleWriter.js";
 import { NullTransporter } from "../src/core/NullTransporter.js";
 import { NullWriter } from "../src/core/Writer.js";
 import fs from "node:fs";
-import { SimpleSyncFileWriter } from "../src/node/FileWriter.js";
+import { StreamFileWriter } from "../src/node/FileWriter.js";
 import * as EventType from "../src/core/EventType.js";
 import { BufferedWriter } from "../src/core/BufferedWriter.js";
 import { SyncFileWriter } from "../src/node/SyncFileWriter.js";
 
-let writer = new SyncFileWriter({ path: "tmp/test.txt" });
-let outer = new BufferedWriter(writer, 2000, 1000, 64 * 1024)
+let writer = null;
+let outer = null;
 const encoder = new SyslogEncoder();
 const logger = new Logger(TransporterBuilder.start(7)
   .encodedBy(new SyslogEncoder())
-  .write(outer)
+  .via(inner => outer = new BufferedWriter(inner, 2000, 100, 64 * 1024))
+  .write(writer = new SyncFileWriter({ path: "tmp/test.txt" }))
   .end());
 const VOLUME = 100000;
 const startTime = performance.now();

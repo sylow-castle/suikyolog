@@ -21,6 +21,14 @@ export class SyncFileWriter extends Writer {
     fs.writeSync(this.#fd, data + '\n');
   }
 
+  writeSync(data) {
+    fs.writeSync(this.#fd, data + '\n');
+  }
+
+  get canSync() {
+    return true;
+  }
+
   close() {
     fs.closeSync(this.#fd);
   }

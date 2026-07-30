@@ -153,6 +153,7 @@ class CompiledTransporterBuilder {
   #first = null;
   #last = null;
   #eventTarget = null;
+  #writerStack = [];
 
   /**
    * 
@@ -171,6 +172,20 @@ class CompiledTransporterBuilder {
     this.#encoder = encoder;
   }
 
+  /**
+   * @callback WriterDecorator
+   * @param {Writer} writer
+   * @returns {Writer}
+   */
+  /**
+   * 
+   * @param {WriterDecorator} writerCallback 
+   * @returns {this}
+   */
+  via(writerCallback) {
+    this.#writerStack.push(writerCallback);
+    return this;
+  }
 
   /**
    * @template T stringとかbyte[]とか
@@ -181,7 +196,16 @@ class CompiledTransporterBuilder {
     const current = this.#last;
     writer.setEncoder(this.#encoder);
     writer.setEventTarget(this.#eventTarget);
-    this.#last.setNext(writer);
+
+    const resultWriter = this.#writerStack.reduceRight((innerWriter, callback) => {
+      const newWriter = callback(innerWriter);
+      newWriter.setEncoder(this.#encoder);
+      newWriter.setEventTarget(this.#eventTarget);
+      return newWriter;
+    }, writer);
+
+    this.#last.setNext(resultWriter);
+
     return new FinishedTransporterBuilder(this.#first, this.#eventTarget);
   }
 

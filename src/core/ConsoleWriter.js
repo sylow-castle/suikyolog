@@ -19,14 +19,25 @@ export class ConsoleWriter extends Writer {
   /**
    * コンソールに出力する
    * @override
-   * @param {string} payload
-   * @throw Error コンソール出力でエラーが発生した場合
+   * @param {string} frame
    */
   write(frame) {
-    try {
-      console.log(frame);
-    } catch (err) {
-      this.#errorHandler(err);
-    }
+    console.log(frame);
+  }
+
+  /**
+   * コンソールに出力する
+   * @override
+   * @param {string} frame 
+   */
+  writeSync(frame) {
+    this.write(frame);
+  }
+
+  /**
+   * @override
+   */
+  get canSync() {
+    return true;
   }
 }

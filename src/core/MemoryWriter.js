@@ -25,6 +25,22 @@ export class MemoryWriter extends Writer {
   }
 
   /**
+   * @override
+   * @param {string | byte[]} frame
+   */
+  writeSync(frame) {
+    this.write(frame);
+  }
+
+  /**
+   * @override
+   * @returns {boolean}
+   */
+  get canSync() {
+    return true;
+  }
+
+  /**
    * logの内容が詰まった配列を返却します。
    * @returns {string[]}
    */
