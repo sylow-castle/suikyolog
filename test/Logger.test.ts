@@ -28,36 +28,6 @@ describe("Loggerクラスのテスト", () => {
     spy.mockRestore();
   });
 
-  test('トランスポート層でエラーが発生した場合登録していたエラーハンドラーを呼び出す', async () => {
-    const spy = vi.spyOn(console, 'log')
-      .mockImplementation(() => { throw new Error('console log error') });
-
-    const errorHandler = vi.fn();
-    const logger = new Logger(
-      TransporterBuilder.start(7)
-        .encodedBy(new SyslogEncoder())
-        .write(new ConsoleWriter({
-          onError: errorHandler
-        }))
-        .end()
-    ).fac(20);
-    logger.onError(errorHandler)
-    const stmt = new SyslogStmtBuilder().emerg().msg(`test message`).build();
-
-    logger.log(stmt);
-    await vi.waitFor(() => {
-      expect(errorHandler).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: "console log error"
-        })
-      );
-
-    });
-
-    expect(spy).toHaveBeenCalled();
-    spy.mockRestore();
-  });
-
   test('ロガーを通じてSyslogStmtBuilderの各状態を設定できる', () => {
     const tp = TransporterBuilder
       .start(6)

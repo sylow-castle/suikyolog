@@ -28,7 +28,7 @@ export default defineConfig([
 
   },
   {
-    files: ["test/**/*.{ts,mts,cts}", "**/*/*.test.ts", "**/*/*.spec.ts"],
+    files: ["test/**/*.{js,mjs,cjs,ts,mts,cts}", "**/*/*.test.ts", "**/*/*.spec.ts"],
     extends: [...tseslint.configs.recommended],
     rules: {
       "eqeqeq": ["error", "always"],
