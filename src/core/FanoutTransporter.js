@@ -1,6 +1,4 @@
-import { error } from "node:console";
 import { Transporter } from "./Transporter.js";
-import { SyslogStmt } from "./SyslogStmt.js";
 
 export class FanoutTransporter extends Transporter {
 
@@ -8,7 +6,6 @@ export class FanoutTransporter extends Transporter {
    * @typee Array<Transporter>
    */
   #children = [];
-  #eventTarget = null;
 
   /**
    * @param {Array<Transporter>} transporters 

@@ -1,5 +1,3 @@
-import { SyslogStmt } from "./SyslogStmt.js";
-import { Transporter } from "./Transporter.js";
 import { Writer } from "./Writer.js";
 
 export class MemoryWriter extends Writer {
@@ -11,6 +9,7 @@ export class MemoryWriter extends Writer {
     const size = config.size ? config.size : 1000;
     if (Number.isInteger(size) && size > 0) {
       this.#size = size;
+      this.#logs = new Array(this.#size);
     } else {
       throw new Error(`invalid size parameter: ${size}`);
     }

@@ -8,7 +8,7 @@ export class Encoder {
    * @param {import("./SyslogStmt.js").SyslogStmt} syslogStmt
    * @returns {string}
    */
-  encode(syslogStmt) {
+  encode(_syslogStmt) {
     throw new Error("not implemented");
   }
 

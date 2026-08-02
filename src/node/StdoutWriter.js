@@ -1,5 +1,4 @@
 import { stderr, stdout } from "node:process";
-import { Transporter } from "../core/Transporter.js";
 import { Writer } from "../core/Writer.js";
 import { TransporterBuilder } from "../core/TransporterBuilder.js";
 import { SyslogEncoder } from "../core/SyslogEncoder.js";

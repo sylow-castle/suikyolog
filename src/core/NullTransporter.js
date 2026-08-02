@@ -1,4 +1,3 @@
-import { SyslogStmt } from "./SyslogStmt.js";
 import { Transporter } from "./Transporter.js";
 
 /**
@@ -11,14 +10,7 @@ export class NullTransporter extends Transporter {
    * @async
    * @param {SyslogStmt} payload 
    */
-  async transport(payload) {
-  }
-
-  /**
-   * 何もしません。
-   * @param {Encoder} encoder 
-   */
-  setEncoder(encoder) {
+  async transport(_payload) {
   }
 
 }

@@ -1,6 +1,5 @@
 import { Encoder } from "./Encoder.js";
-import { ImmutableStructuredData, StructuredData } from "./StructuredData.js";
-import { NILVALUE, FACILITY_STR, SEVERITY_STR, MS_CACHE, PRI_CACHE } from "./Rfc5424Rule.js";
+import { NILVALUE, MS_CACHE, PRI_CACHE } from "./Rfc5424Rule.js";
 
 
 const SP = " ";
@@ -84,9 +83,9 @@ export class SyslogEncoder extends Encoder {
 export class StructureDataVisitor {
   /**
    * @abstract
-   * @param {string} sdId 
+   * @param {string} _sdId 
    */
-  visitStartSdId(sdId) {
+  visitStartSdId(_sdId) {
     throw new Error('not implemented');
   }
 
@@ -100,10 +99,10 @@ export class StructureDataVisitor {
 
   /**
    * @abstract
-   * @param {string} key 
-   * @param {string} value 
+   * @param {string} _key 
+   * @param {string} _value 
    */
-  visitParam(key, value) {
+  visitParam(_key, _value) {
     throw new Error('not implemented');
   }
 }

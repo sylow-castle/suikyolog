@@ -2,7 +2,7 @@ import { vi, test, describe, expect } from "vitest";
 import { StdoutWriter } from "../src/node/StdoutWriter.js"
 import { stdout } from "node:process";
 import { SyslogEncoder } from "../src/core/SyslogEncoder.js";
-import { SyslogStmt, SyslogStmtBuilder } from "../src/core/SyslogStmt.js";
+import { SyslogStmtBuilder } from "../src/core/SyslogStmt.js";
 
 
 describe("StdoutTransporterのテスト", () => {

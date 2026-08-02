@@ -1,6 +1,5 @@
 import { SyslogStmt, SyslogStmtBuilder } from "./SyslogStmt.js";
-import { ConsoleWriter } from "./ConsoleWriter.js";
-import { FACILITY_NUM, NILVALUE, SEVERITY_NUM } from "./Rfc5424Rule.js";
+import { NILVALUE, SEVERITY_NUM } from "./Rfc5424Rule.js";
 import { Transporter } from "./Transporter.js";
 import { MutableStructuredData } from "./StructuredData.js";
 import * as EventType from "./EventType.js";

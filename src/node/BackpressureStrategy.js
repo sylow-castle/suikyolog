@@ -31,7 +31,7 @@ class DropStrategy extends BackpressureStrategy {
 
 class OnMemoryStrategy extends BackpressureStrategy {
 
-  async handleBackpressure(writer) { }
+  async handleBackpressure(_writer) { }
 
   isShouldWrite() {
     return true;

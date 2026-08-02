@@ -1,4 +1,3 @@
-import { SyslogStmt } from "./SyslogStmt.js";
 import { Transporter } from "./Transporter.js";
 
 /**

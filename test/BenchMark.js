@@ -1,23 +1,14 @@
 import { Logger } from "../src/core/Logger.js";
 import { SyslogEncoder } from "../src/core/SyslogEncoder.js";
-import { SimpleEncoder } from "../src/core/SimpleEncoder.js";
-import { SyslogStmt, SyslogStmtBuilder } from "../src/core/SyslogStmt.js";
+import { SyslogStmtBuilder } from "../src/core/SyslogStmt.js";
 import { MutableStructuredData } from "../src/core/StructuredData.js";
-import { MemoryWriter } from "../src/core/MemoryWriter.js";
-import { PosixWriter, StdoutWriter } from "../src/node/StdoutWriter.js";
 import { TransporterBuilder } from "../src/core/TransporterBuilder.js";
-import { ConsoleWriter } from "../src/core/ConsoleWriter.js";
-import { NullTransporter } from "../src/core/NullTransporter.js";
-import { NullWriter } from "../src/core/Writer.js";
-import fs from "node:fs";
-import { StreamFileWriter } from "../src/node/FileWriter.js";
 import * as EventType from "../src/core/EventType.js";
 import { BufferedWriter } from "../src/core/BufferedWriter.js";
 import { SyncFileWriter } from "../src/node/SyncFileWriter.js";
 
 let writer = null;
 let outer = null;
-const encoder = new SyslogEncoder();
 const logger = new Logger(TransporterBuilder.start(7)
   .encodedBy(new SyslogEncoder())
   .via(inner => outer = new BufferedWriter(inner, 2000, 100, 64 * 1024))

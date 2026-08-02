@@ -17,6 +17,8 @@
   "scripts": {
     "build": "vite build",
     "bench": "vitest bench --run",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "test": "vitest run",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
@@ -30,11 +32,15 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.1.1",
     "@typescript/typescript6": "^6.0.2",
     "@vitest/coverage-v8": "^4.1.10",
     "@vitest/ui": "^4.1.10",
-    "typescript": "^7.0.2",
+    "eslint": "^10.8.0",
+    "globals": "^17.8.0",
+    "jiti": "^2.7.0",
+    "typescript-eslint": "^8.65.0",
     "vite": "^8.1.5",
     "vite-plugin-dts": "^5.0.3",
     "vitest": "^4.1.10"

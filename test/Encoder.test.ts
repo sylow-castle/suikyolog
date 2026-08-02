@@ -4,7 +4,7 @@ import { Encoder } from '../src/core/Encoder.js';
 describe("Encoderクラスのテスト", () => {
 
   test("Encoderクラスは何も実装していない", () => {
-    expect(() => (new Encoder() as any).encode(null)).toThrow("not implemented");
+    expect(() => (new Encoder()).encode(null)).toThrow("not implemented");
   });
 
   test.for([

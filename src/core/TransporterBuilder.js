@@ -193,7 +193,6 @@ class CompiledTransporterBuilder {
    * @return {FinieshedTransporterBuilder}
    */
   write(writer) {
-    const current = this.#last;
     writer.setEncoder(this.#encoder);
     writer.setEventTarget(this.#eventTarget);
 

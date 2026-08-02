@@ -1,19 +1,12 @@
-import { Encoder } from "./Encoder.js";
-import { SyslogStmt } from "./SyslogStmt.js";
-import { Transporter } from "./Transporter.js";
 import { Writer } from "./Writer.js";
 
 /**
  * コンソール出力をするトランスポーター
  */
 export class ConsoleWriter extends Writer {
-  #errorHandler = null;
 
-  constructor(conf = {}) {
-    super(conf);
-    if (typeof conf.onError === "function") {
-      this.#errorHandler = conf.onError
-    }
+  constructor() {
+    super();
   }
 
   /**

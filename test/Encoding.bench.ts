@@ -2,8 +2,6 @@ import { bench, describe } from 'vitest'
 import { SyslogEncoder } from '../src/core/SyslogEncoder.js'
 import { Logger } from '../src/core/Logger.js'
 import { TransporterBuilder } from '../src/core/TransporterBuilder.js'
-import { NullWriter } from '../src/core/Writer'
-import { NullTransporter } from '../src/core/NullTransporter.js'
 import { MemoryWriter } from '../src/core/MemoryWriter.js'
 
 

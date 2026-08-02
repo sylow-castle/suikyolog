@@ -16,7 +16,7 @@ export class SyslogStmtHeader {
   #msgId;
 
   constructor(fac, sev, ver, time, host, app, proc, msgId,) {
-    if (typeof fac === "string" && Rfc5424Rule.FACILITY_NUM.hasOwnProperty(fac)) {
+    if (typeof fac === "string" && Object.hasOwn(Rfc5424Rule.FACILITY_NUM, fac)) {
       this.#facility = Rfc5424Rule.FACILITY_NUM[fac];
     } else if (Number.isInteger(fac) && 0 <= fac && fac <= 23) {
       this.#facility = fac;
@@ -24,7 +24,7 @@ export class SyslogStmtHeader {
       throw new Error(`Invalid facility: ${fac}`);
     }
 
-    if (typeof sev === "string" && Rfc5424Rule.SEVERITY_NUM.hasOwnProperty(sev)) {
+    if (typeof sev === "string" && Object.hasOwn(Rfc5424Rule.SEVERITY_NUM, sev)) {
       this.#severity = Rfc5424Rule.SEVERITY_NUM[sev];
     } else if (Number.isInteger(sev) && 0 <= sev && sev <= 7) {
       this.#severity = sev;

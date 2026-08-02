@@ -22,7 +22,7 @@ describe.only("BufferedWriterクラスのテスト", () => {
     writer.write("entry 1");
     expect(inner.getLogs()).toStrictEqual([]);
 
-    while (Date.now() < nextStep) { }
+    while (Date.now() < nextStep);
     writer.write("entry 2");
 
     expect(inner.getLogs()).toStrictEqual([["entry 1", "entry 2"].join("\n")]);

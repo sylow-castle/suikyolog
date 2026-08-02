@@ -1,9 +1,7 @@
 import { describe, test, expect } from 'vitest';
-import { SyslogStmt, SyslogStmtBuilder } from '../src/core/SyslogStmt.js';
-import { MutableStructuredData } from '../src/core/StructuredData.js';
+import { SyslogStmtBuilder } from '../src/core/SyslogStmt.js';
+import { MutableStructuredData, StructuredData } from '../src/core/StructuredData.js';
 import { SyslogEncoder, StructuredDataEncoder } from '../src/core/SyslogEncoder.js';
-import { SimpleEncoder } from '../src/core/SimpleEncoder.js';
-import { Encoder } from '../src/core/Encoder.js';
 
 const BOM = "\uFEFF";
 const testMessage = "test message";
@@ -11,7 +9,6 @@ describe("SyslogStmtクラスのテスト", () => {
   test("rfc5424モードでの典型例", () => {
     //以下のnowは次の時間のつもり：2026-07-13T23:08:19.423+09:00
     const now = 1783898419423
-    const testMessage = "test message";
     const builder = new SyslogStmtBuilder();
     const stmt = builder.msg(testMessage)
       .time(now)
@@ -33,10 +30,10 @@ describe("SyslogStmtクラスのテスト", () => {
     const sd = new MutableStructuredData().add("testSdId", "testKey", "testValue");
     const stmt = builder.msg(testMessage)
       .time(now)
-      .host(undefined as any)
-      .app(undefined as any)
-      .proc(undefined as any)
-      .msgId(undefined as any)
+      .host(undefined)
+      .app(undefined)
+      .proc(undefined)
+      .msgId(undefined)
       .sd(sd).build();
     const encoder = new SyslogEncoder().withBom();
     const sdEncoder = new StructuredDataEncoder();
@@ -75,7 +72,7 @@ describe("SyslogStmtクラスのテスト", () => {
   ])(`versionのバリデーション（invalidVersion: $invalidVersion）`, ({ invalidVersion }) => {
     const stmt = new SyslogStmtBuilder();
 
-    expect(() => stmt.ver(invalidVersion as any).build()).toThrow(/Invalid version:/);
+    expect(() => stmt.ver(invalidVersion).build()).toThrow(/Invalid version:/);
   });
 
   test.for([
@@ -87,7 +84,7 @@ describe("SyslogStmtクラスのテスト", () => {
     { invalidSeverity: "Emergency" },
   ])("severityのバリデーション(invalidSeverity: $invalidSeverity)", ({ invalidSeverity }) => {
     const stmt = new SyslogStmtBuilder();
-    expect(() => stmt.sev(invalidSeverity as any).build()).toThrow(/Invalid severity:/);
+    expect(() => stmt.sev(invalidSeverity as unknown as number).build()).toThrow(/Invalid severity:/);
   });
 
   test.for([
@@ -99,7 +96,7 @@ describe("SyslogStmtクラスのテスト", () => {
     { invalidFacility: "Local0" },
   ])("facilityのバリデーション(invalidFacility: $invalidFacility)", ({ invalidFacility }) => {
     const stmt = new SyslogStmtBuilder();
-    expect(() => stmt.fac(invalidFacility as any).build()).toThrow(/Invalid facility:/);
+    expect(() => stmt.fac(invalidFacility as unknown as number).build()).toThrow(/Invalid facility:/);
   });
 
   test.for([
@@ -116,7 +113,7 @@ describe("SyslogStmtクラスのテスト", () => {
     { invalidHostname: 0 },
   ])("hostnameのバリデーション(invalidHostname: $invalidHostname)", ({ invalidHostname }) => {
     const stmt = new SyslogStmtBuilder();
-    expect(() => stmt.host(invalidHostname as any).build()).toThrow(/Invalid hostname:/);
+    expect(() => stmt.host(invalidHostname as unknown as string).build()).toThrow(/Invalid hostname:/);
   });
 
   test.for([
@@ -125,7 +122,7 @@ describe("SyslogStmtクラスのテスト", () => {
     { invalidAppname: 0 },
   ])("appnameのバリデーション(invalidAppname: $invalidAppname)", ({ invalidAppname }) => {
     const stmt = new SyslogStmtBuilder();
-    expect(() => stmt.app(invalidAppname as any).build()).toThrow(/Invalid appname:/);
+    expect(() => stmt.app(invalidAppname as unknown as string).build()).toThrow(/Invalid appname:/);
   });
 
   test.for([
@@ -134,7 +131,7 @@ describe("SyslogStmtクラスのテスト", () => {
     { invalidProcId: 0 },
   ])("procIdのバリデーション(invalidProcId: $invalidProcId)", ({ invalidProcId }) => {
     const stmt = new SyslogStmtBuilder();
-    expect(() => stmt.proc(invalidProcId as any).build()).toThrow(/Invalid procId:/);
+    expect(() => stmt.proc(invalidProcId as unknown as string).build()).toThrow(/Invalid procId:/);
   });
 
   test.for([
@@ -143,15 +140,17 @@ describe("SyslogStmtクラスのテスト", () => {
     { invalidMsgId: 0 },
   ])("msgIdのバリデーション(invalidMsgId: $invalidMsgId)", ({ invalidMsgId }) => {
     const stmt = new SyslogStmtBuilder();
-    expect(() => stmt.msgId(invalidMsgId as any).build()).toThrow(/Invalid msgId:/);
+    expect(() => stmt.msgId(invalidMsgId as unknown as string).build()).toThrow(/Invalid msgId:/);
   });
 
   test.for([
     { invalidSd: "--" },
   ])("sdのバリデーション(invalidSd: $invalidSd)", ({ invalidSd }) => {
     const stmt = new SyslogStmtBuilder();
-    expect(() => stmt.sd(invalidSd as any).build()).toThrow(/Invalid structuredData:/);
+    expect(() => stmt.sd(invalidSd as unknown as StructuredData).build()).toThrow(/Invalid structuredData:/);
   });
+
+
 
 });
 

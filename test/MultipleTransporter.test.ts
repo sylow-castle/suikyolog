@@ -1,7 +1,7 @@
 import { vi, test, describe, expect } from "vitest";
 import { FanoutTransporter } from "../src/core/FanoutTransporter.js";
 import { SyslogEncoder } from "../src/core/SyslogEncoder.js";
-import { SyslogStmt, SyslogStmtBuilder } from "../src/core/SyslogStmt.js";
+import { SyslogStmtBuilder } from "../src/core/SyslogStmt.js";
 import { ConsoleWriter } from "../src/core/ConsoleWriter.js";
 
 

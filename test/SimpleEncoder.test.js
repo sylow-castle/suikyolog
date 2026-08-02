@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest";
 import { SimpleEncoder } from "../src/core/SimpleEncoder";
-import { SyslogStmt, SyslogStmtBuilder } from "../src/core/SyslogStmt";
+import { SyslogStmtBuilder } from "../src/core/SyslogStmt";
 
 describe("SimpleEncoderクラスのテスト", () => {
   test("典型的な出力結果", () => {

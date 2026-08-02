@@ -12,7 +12,7 @@ describe("StructuredDataクラスのテスト", () => {
 
   test("addを引数1個で呼ぶ", () => {
     const sd = new MutableStructuredData()
-      .add("testSdId", undefined as any, undefined as any);
+      .add("testSdId", undefined, undefined);
     const encoder = new StructuredDataEncoder();
     expect(encoder.encode(sd)).toBe(`[testSdId]`);
   });
@@ -20,21 +20,21 @@ describe("StructuredDataクラスのテスト", () => {
   test("add(set)を引数2個で呼ぶ", () => {
     const longStr = "a".repeat(32);
     const sd = new MutableStructuredData()
-      .add(longStr, undefined as any, undefined as any)
-      .set("testKey", "testValue", undefined as any);
+      .add(longStr, undefined, undefined)
+      .set("testKey", "testValue", undefined);
     const encoder = new StructuredDataEncoder();
     expect(encoder.encode(sd)).toBe(`[${longStr} testKey="testValue"]`);
   });
 
   test("addを引数0個で呼ぶ", () => {
     const sd = new MutableStructuredData();
-    expect(() => { sd.add(undefined as any, undefined as any, undefined as any) }).toThrow("arg1 is required: undefined.");
+    expect(() => { sd.add(undefined, undefined, undefined) }).toThrow("arg1 is required: undefined.");
   });
 
   test("SDIDに空文字を指定するとエラーを投げる", () => {
     const sd = new MutableStructuredData();
     expect(() => {
-      sd.add("", undefined as any, undefined as any)
+      sd.add("", undefined, undefined)
     }).toThrow(/SD-NAME is 1-32 length/);
   });
 
@@ -42,7 +42,7 @@ describe("StructuredDataクラスのテスト", () => {
     const longStr = "a".repeat(33);
     const sd = new MutableStructuredData();
     expect(() => {
-      sd.add(longStr, undefined as any, undefined as any)
+      sd.add(longStr, undefined, undefined)
     }).toThrow(/SD-NAME is 1-32 length/);
   });
 
@@ -61,15 +61,15 @@ describe("StructuredDataクラスのテスト", () => {
   test("キー名にnullを指定するとエラーを投げる", () => {
     const sd = new MutableStructuredData();
     expect(() => {
-      sd.add("testSdId", undefined as any, undefined as any)
-        .add("testSdName", null as any, "")
+      sd.add("testSdId", undefined, undefined)
+        .add("testSdName", null, "")
     }).toThrow(/key is not string/);
   });
 
   test("キー名に空文字を指定するとエラーを投げる", () => {
     const sd = new MutableStructuredData();
     expect(() => {
-      sd.add("testSdId", undefined as any, undefined as any)
+      sd.add("testSdId", undefined, undefined)
         .add("testSdId", "", "")
     }).toThrow(/SD-NAME is 1-32 length/);
   });
@@ -111,7 +111,7 @@ describe("StructuredDataクラスのテスト", () => {
     sd.add("testSdId1", "testName1", "testParam1")
       .add("testSdId2", "testName2", "testParam2")
       .use("testSdId1")
-      .add("testName3", "testParam3", undefined as any)
+      .add("testName3", "testParam3", undefined as string)
 
     const encoder = new StructuredDataEncoder();
     expect(encoder.encode(sd)).toBe(`[testSdId1 testName1="testParam1" testName3="testParam3"][testSdId2 testName2="testParam2"]`);

@@ -1,5 +1,3 @@
-import { SyslogStmt } from "./SyslogStmt.js";
-
 /**
  * トランスポーターの基底クラス。
  * @abstract
@@ -22,7 +20,7 @@ export class Transporter {
    * @param {SyslogStmt | stinrg | byte[]} payload 
    * @throws {Error} 転送処理に失敗した場合。
    */
-  transport(payload) {
+  transport(_payload) {
     throw new Error('Not implemented');
   }
 

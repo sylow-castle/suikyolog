@@ -1,25 +1,20 @@
-import { Encoder } from "./Encoder.js";
-import { SyslogStmt } from "./SyslogStmt.js";
 import { Transporter } from "./Transporter.js";
 
 export const _encoder = Symbol("encoder");
 
 export class Writer extends Transporter {
-  #config = {};
 
 
   /**
    * 
-   * @param {object} config 
    */
-  constructor(config) {
+  constructor() {
     super();
     if (new.target === Writer) {
       throw Error(`This is abstract class: ${Writer.name}`);
     }
 
     this[_encoder] = null;
-    this.#config = config;
   }
 
   /**
@@ -35,17 +30,17 @@ export class Writer extends Transporter {
   /**
    * 出口に沿った書き出し処理を記述します
    * @abstract
-   * @param {string | byte[]} frame 
+   * @param {string | byte[]} _frame 
    */
-  write(frame) {
+  write(_frame) {
     throw new Error("not implemented")
   }
 
   /**
    * 同期での書き出し処理を記述します
-   * @param {string | byte[]} frame 
+   * @param {string | byte[]} _frame 
    */
-  writeSync(frame) {
+  writeSync(_frame) {
     throw new Error("sync operation is unsupported")
   }
 
@@ -105,32 +100,25 @@ export class Writer extends Transporter {
 }
 
 export class NullWriter extends Writer {
-  #config = {};
-  #eventTarget = null;
 
-  /**
-   * 
-   * @param {object} config 
-   */
-  constructor(config) {
+  constructor() {
     super();
     this[_encoder] = null;
-    this.#config = config;
   }
 
   /**
    * 何もしない
    * 
-   * @param {string | byte[]} frame 
+   * @param {string | byte[]} _frame 
    */
-  write(frame) {
+  write(_frame) {
   }
 
   /**
    * 何もしない
-   * @param {string | byte[]} frame 
+   * @param {string | byte[]} _frame 
    */
-  writeSync(frame) {
+  writeSync(_frame) {
   }
 
   /**

@@ -14,10 +14,10 @@ export class BufferedWriter extends Writer {
   #lastFlushTime = Date.now();
 
   /**
-   * @param {Writer} inner　writer which wanted to add buffering
-   * @param {number} volume - default 16 * 1024 byte
+   * @param {Writer} inner - writer which wanted to add buffering
    * @param {number} length - default 100 entries
    * @param {number} interval - default 100 ms
+   * @param {number} volume - default 16 * 1024 byte
    */
   constructor(inner, length = 100, interval = 100, volume = 16 * 1024) {
     super({});
