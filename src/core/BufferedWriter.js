@@ -20,7 +20,7 @@ export class BufferedWriter extends Writer {
    * @param {number} volume - default 16 * 1024 byte
    */
   constructor(inner, length = 100, interval = 100, volume = 16 * 1024) {
-    super({});
+    super();
     this.#inner = inner;
 
     if (typeof length !== "number" || Number.isNaN(length)) {
@@ -89,11 +89,7 @@ export class BufferedWriter extends Writer {
 
     this.#inner.write(this.#queue.join('\n'));
 
-    this.#lastFlushTime = Date.now();
-    this.#currentQueueVolume = 0;
-    this.#queue = [];
-
-    this.#resetTimer();
+    this.#reset();
   }
 
   /**
@@ -110,11 +106,15 @@ export class BufferedWriter extends Writer {
     }
 
     this.#inner.writeSync(this.#queue.join('\n'));
+    this.#reset();
+  }
 
+  #reset() {
     this.#lastFlushTime = Date.now();
     this.#currentQueueVolume = 0;
     this.#queue = [];
 
+    this.#resetTimer();
   }
 
   get canSync() {
@@ -122,15 +122,46 @@ export class BufferedWriter extends Writer {
   }
 
   /**
-   * クローズ処理
+   * リソースのリロード処理を記述します。
+   * @override
+   */
+  reload() {
+    if (this.canSync) {
+      this.flushSync();
+    } else {
+      //ベストエフォート
+      this.flush();
+    }
+
+    this.#inner.reload();
+  }
+
+  /**
+   * クローズ処理。何度呼んでもよい。
+   * @override
    */
   close() {
-    this.flush();
+    if (this._isClosed) {
+      return;
+    }
+
+    if (this.canSync) {
+      this.flushSync();
+    } else {
+      //ベストエフォート
+      this.flush();
+    }
+
     if (this.#timeoutId !== null) {
       clearTimeout(this.#timeoutId);
       this.#timeoutId = null;
     }
-    this.#inner.close?.();
+
+    if (typeof this.#inner.close === "function") {
+      this.#inner.close();
+    }
+
+    this._isClosed = true;
   }
 
 }

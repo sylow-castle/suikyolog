@@ -1,18 +1,19 @@
 import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } from "vitest"
-import { createServer } from "node:http";
+import { createServer, Server } from "node:http";
 import { FetchWriter } from "../src/core/FetchWriter.js";
 import * as EventType from "../src/core/EventType.js";
 import { TransporterBuilder } from "../src/core/TransporterBuilder.js";
 import { SyslogEncoder } from "../src/core/SyslogEncoder.js";
 import { Logger } from "../src/core/Logger.js";
+import { AddressInfo } from "node:net";
 
-let server = null;
-const PORT = 30080;
-const URL = `http://localhost:${PORT}/log`;
-let receivedLogs = null;
+let SERVER: Server = null;
+let URL: string = `http://localhost`;
+let receivedLogs: string[] = [];
 
-beforeAll(() => {
-  server = createServer((req, res) => {
+
+async function startMockServer() {
+  const server = createServer((req, res) => {
     if (req.method === "POST" && req.url === "/log") {
       const chunks = [];
 
@@ -30,8 +31,23 @@ beforeAll(() => {
       res.end("Not Found");
     }
   });
-  server.listen(PORT);
-})
+
+  return new Promise<{ server: Server; url: string }>((resolve, reject) => {
+    server.listen(0, () => {
+      const addr = server.address() as AddressInfo;
+      const url = `http://localhost:${addr.port}`;
+      resolve({ server, url });
+    });
+    server.on("error", (err) => reject(err))
+  });
+}
+
+beforeAll(async () => {
+  const { server, url } = await startMockServer();
+  SERVER = server;
+  URL = url;
+
+});
 
 beforeEach(() => {
   receivedLogs = [];
@@ -42,14 +58,14 @@ afterEach(() => {
 });
 
 afterAll(() => {
-  server.close();
+  SERVER.close();
 })
 
 describe("FetchWriterクラスのテスト", () => {
   test("HTTP経由でのログ送信（成功ケース）", async () => {
     const logger = new Logger(TransporterBuilder.start(7)
       .encodedBy(new SyslogEncoder())
-      .write(new FetchWriter(URL))
+      .write(new FetchWriter(URL + "/log"))
       .end()
     );
 

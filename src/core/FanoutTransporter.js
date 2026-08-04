@@ -26,10 +26,29 @@ export class FanoutTransporter extends Transporter {
   transport(payload) {
     this.#children.map((transporter, index) => {
       try {
-        return transporter.transport(payload);
+        transporter.transport(payload);
       } catch (err) {
         throw new Error(`Transporter {${index} faild: ${err.message}`, { cause: err });
       }
     });
+  }
+
+  /**
+   * @override
+   */
+  close() {
+    if (this._isClosed) {
+      return;
+    }
+    this.#children.forEach(child => child.close());
+    this._isClosed = true;
+  }
+
+
+  /**
+   * @override
+   */
+  reload() {
+    this.#children.forEach(child => child.reload());
   }
 }

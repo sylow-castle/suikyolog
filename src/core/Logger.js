@@ -31,7 +31,7 @@ export class Logger {
 
   #errorHandler = doNothing;
   #isMute = false;
-  #isEnded = false;
+  #isClosed = false;
 
   constructor(config) {
     const transporter = config.transporter;
@@ -240,14 +240,14 @@ export class Logger {
    * @param {SyslogStmt} syslogStmt 
    */
   log(syslogStmt) {
-    if (this.#isMute || this.#isEnded) {
+    if (this.#isMute || this.#isClosed) {
       return;
     }
 
     try {
       this.#transporter.transport(syslogStmt);
     } catch (err) {
-      this.#errorHandler(err);
+      this.#eventTarget.dispatchEvent(new CustomEvent(EventType.ERROR, { detail: err }));
     }
   }
 
@@ -269,11 +269,18 @@ export class Logger {
     return this;
   }
 
+  reload() {
+    this.#transporter.reload();
+  }
+
   close() {
-    this.#eventTarget.addEventListener(EventType.CLOSED, () => {
-      this.#isEnded = true;
-    });
-    this.#eventTarget.dispatchEvent(new CustomEvent(EventType.CLOSE));
+    if (this.#isClosed) {
+      return;
+    }
+    this.#isClosed = true;
+    this.#eventTarget.dispatchEvent(new CustomEvent(EventType.BEFORECLOSE));
+    this.#transporter.close();
+    this.#eventTarget.dispatchEvent(new CustomEvent(EventType.CLOSED));
   }
 
   addEventListener(type, listener) {

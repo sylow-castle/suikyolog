@@ -14,7 +14,6 @@ export class StreamFileWriter extends Writer {
    * @type {FileStreamWriter}
    */
   #innerWriter = null;
-  #isClosed = false;
   #backpressureStrategy = BackpressureStrategy.Wait();
 
   /**
@@ -31,22 +30,10 @@ export class StreamFileWriter extends Writer {
   }
 
   /**
-   * イベントターゲットを設定します
    * @override
-   * @param {EventTarget} eventTarget 
    */
   setEventTarget(eventTarget) {
     super.setEventTarget(eventTarget);
-
-    this._getEventTarget().addEventListener(EventType.CLOSE, async () => {
-      if (this.#isClosed) {
-        return;
-      }
-      this.#isClosed = true;
-      this.#innerWriter.end();
-      await finished(this.#innerWriter);
-      this._getEventTarget().dispatchEvent(new CustomEvent(EventType.CLOSED));
-    })
 
   }
 
@@ -66,12 +53,25 @@ export class StreamFileWriter extends Writer {
     }
   }
 
-  close() {
-    this.#innerWriter.end();
+  /**
+   * ファイルハンドルを開きなおします
+   * @override
+   */
+  reload() {
+    this.#innerWriter.reload();
   }
 
-  async finished() {
-    return finished(this.#innerWriter);
+  /**
+   * 
+   * @override
+   */
+  close() {
+    if (this._isClosed) {
+      return;
+    }
+    this._isClosed = true;
+    this.#innerWriter.end();
+    finished(this.#innerWriter);
   }
 
 }
@@ -79,7 +79,11 @@ export class StreamFileWriter extends Writer {
 class FileStreamWriter extends Writable {
   #fileHandle = null;
   #path = null;
+  get #flags() {
+    //return fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND | fs.constants.O_SYNC;
+    return fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND;
 
+  }
   constructor(path, eventTarget, options = {}) {
     super({
       highWaterMark: options.highWaterMark ?? 64 * 1024,
@@ -90,14 +94,22 @@ class FileStreamWriter extends Writable {
   }
 
   _construct(callback) {
-    //const flags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND | fs.constants.O_SYNC;
-    const flags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND;
-    fs.open(this.#path, flags, (err, fd) => {
+    this.#open(callback);
+  }
+
+  #open(callback) {
+    fs.open(this.#path, this.#flags, (err, fd) => {
       if (!err) {
         this.#fileHandle = fd;
       }
       callback(err);
     });
+
+  }
+
+  reload() {
+    fs.closeSync(this.#fileHandle);
+    this.#fileHandle = fs.openSync(this.#path, this.#flags);
   }
 
   _write(chunk, encoding, callback) {

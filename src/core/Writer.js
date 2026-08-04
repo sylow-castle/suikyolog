@@ -66,10 +66,19 @@ export class Writer extends Transporter {
 
   /**
    * リソース開放処理を記述します。
+   * 冪等性を確保するよう実装してください。
    */
   close() {
 
   }
+
+  /**
+   * リソースのリロード処理を記述します。
+   * @override
+   */
+  reload() {
+  }
+
 
   /**
    * エンコーダーを設定します

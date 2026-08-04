@@ -1,3 +1,4 @@
+export * from "./BufferedWriter.js";
 export * from "./ConsoleWriter.js";
 export * from "./Encoder.js";
 export * from "./EventType.js";

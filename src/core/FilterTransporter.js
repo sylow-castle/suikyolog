@@ -14,10 +14,9 @@ export class FilterTransporter extends Transporter {
 
   /**
    * 保存された条件に合致するものを次に流します。
-   * @async
    * @param {SyslogStmt} payload 
    */
-  async transport(payload) {
+  transport(payload) {
     if (this.#condition(payload)) {
       this.next(payload)
     }
