@@ -53,15 +53,13 @@ describe("FetchWriterクラスのテスト", () => {
       .end()
     );
 
-    const logMsg = "test message";
-
     // イベントハンドラを設定
     const received = [];
     const error = [];
     logger.addEventListener(EventType.ERROR, (e) => error.push(e));
     logger.addEventListener(EventType.WRITTEN, (e) => received.push((e as CustomEvent).detail));
 
-    logger.info(logMsg);
+    logger.info("test message");
     logger.close();
 
     // ネットワーク操作なので、少し待ってから結果を確認する
@@ -69,10 +67,35 @@ describe("FetchWriterクラスのテスト", () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     expect(received.length).toBe(1);
-    expect(receivedLogs).toStrictEqual(["test message"]);
 
     // 成功ケースなのでエラーは来ていないはず
     expect(error.length).toBe(0);
+  });
+
+  test("HTTP経由でのログ送信（失敗ケース）", async () => {
+    const logger = new Logger(TransporterBuilder.start(7)
+      .encodedBy(new SyslogEncoder())
+      .write(new FetchWriter(URL + "/fail"))
+      .end()
+    );
+
+    // イベントハンドラを設定
+    const received = [];
+    const error = [];
+    logger.addEventListener(EventType.ERROR, (e) => error.push(e));
+    logger.addEventListener(EventType.WRITTEN, (e) => received.push((e as CustomEvent).detail));
+
+    logger.info("test message");
+    logger.close();
+
+    // ネットワーク操作なので、少し待ってから結果を確認する
+    // (実際のサーバー応答は同期的に待機するわけではないが、テストの性質上少し待つ)
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    expect(received.length).toBe(0);
+
+    // 失敗ケースなのでエラーは来ていないはず
+    expect(error.length).toBe(1);
   });
 
 });

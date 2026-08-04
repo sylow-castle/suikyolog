@@ -16,18 +16,13 @@ const LOG_LEVELS = Object.freeze([
 ]);
 
 /**
+ * @typedef LoggerMethod
+ * @property {function(string | SyslogStmt | Error) : LoggerMethod} info
+
+/**
  * Syslog仕様に準拠したコンソールロガー
  * 
  * @class Logger
- * 
- * @method {Logger} emerg(messageOrStmt: string | SyslogStmt | Error) - 最重要のエラーを出力する
- * @method {Logger} alert(messageOrStmt: string | SyslogStmt | Error) - 即時対応が必要な警告を出力する
- * @method {Logger} crit(messageOrStmt: string | SyslogStmt | Error) - 致命的なシステムエラーを出力する
- * @method {Logger} err(messageOrStmt: string | SyslogStmt | Error) - 通常のエラーを出力する
- * @method {Logger} warn(messageOrStmt: string | SyslogStmt | Error) - 警告を出力する
- * @method {Logger} notice(messageOrStmt: string | SyslogStmt | Error) - 注意が必要な正常なイベントを出力する
- * @method {Logger} info(messageOrStmt: string | SyslogStmt | Error) - 一般的な情報メッセージを出力する
- * @method {Logger} debug(messageOrStmt: string | SyslogStmt | Error) - 開発用のデバッグ情報を出力する
  */
 export class Logger {
   #template = new SyslogStmtBuilder();
@@ -37,14 +32,6 @@ export class Logger {
   #errorHandler = doNothing;
   #isMute = false;
   #isEnded = false;
-
-  static {
-    for (const level of LOG_LEVELS) {
-      Logger.prototype[level] = function (syslogStmt) {
-        return this.#dispatchLog(level, syslogStmt)
-      };
-    }
-  }
 
   constructor(config) {
     const transporter = config.transporter;
@@ -60,6 +47,70 @@ export class Logger {
         throw new Error(`invalid eventTarget: ${eventTarget}`);
       }
     }
+  }
+
+  /**
+   * @param {string | SyslogStmt | Error} syslogStmt 
+   * @returns {Logger}
+   */
+  emerg(syslogStmt) {
+    return this.#dispatchLog(LOG_LEVELS[0], syslogStmt);
+  }
+
+  /**
+   * @param {string | SyslogStmt | Error} syslogStmt 
+   * @returns {Logger}
+   */
+  alert(syslogStmt) {
+    return this.#dispatchLog(LOG_LEVELS[1], syslogStmt);
+  }
+
+  /**
+   * @param {string | SyslogStmt | Error} syslogStmt 
+   * @returns {Logger}
+   */
+  crit(syslogStmt) {
+    return this.#dispatchLog(LOG_LEVELS[2], syslogStmt);
+  }
+
+  /**
+   * @param {string | SyslogStmt | Error} syslogStmt 
+   * @returns {Logger}
+   */
+  err(syslogStmt) {
+    return this.#dispatchLog(LOG_LEVELS[3], syslogStmt);
+  }
+
+  /**
+   * @param {string | SyslogStmt | Error} syslogStmt 
+   * @returns {Logger}
+   */
+  warn(syslogStmt) {
+    return this.#dispatchLog(LOG_LEVELS[4], syslogStmt);
+  }
+
+  /**
+   * @param {string | SyslogStmt | Error} syslogStmt 
+   * @returns {Logger}
+   */
+  notice(syslogStmt) {
+    return this.#dispatchLog(LOG_LEVELS[5], syslogStmt);
+  }
+
+  /**
+   * @param {string | SyslogStmt | Error} syslogStmt 
+   * @returns {Logger}
+   */
+  info(syslogStmt) {
+    return this.#dispatchLog(LOG_LEVELS[6], syslogStmt);
+  }
+
+  /**
+   * @param {string | SyslogStmt | Error} syslogStmt 
+   * @returns {Logger}
+   */
+  debug(syslogStmt) {
+    return this.#dispatchLog(LOG_LEVELS[7], syslogStmt);
   }
 
   #dispatchLog(levelStr, syslogStmt) {
