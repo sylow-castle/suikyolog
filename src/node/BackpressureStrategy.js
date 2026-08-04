@@ -4,7 +4,7 @@ import { once } from "node:events";
 
 export class BackpressureStrategy {
 
-  async handleBackpuressure() {
+  handleBackpuressure() {
     throw new Error("not implemented")
   }
 
@@ -16,7 +16,7 @@ export class BackpressureStrategy {
 class DropStrategy extends BackpressureStrategy {
   #shouldWrite = true;
 
-  async handleBackpressure(writer) {
+  handleBackpressure(writer) {
     this.#shouldWrite = false;
 
     writer.once("drain", () => {
@@ -31,7 +31,7 @@ class DropStrategy extends BackpressureStrategy {
 
 class OnMemoryStrategy extends BackpressureStrategy {
 
-  async handleBackpressure(_writer) { }
+  handleBackpressure(_writer) { }
 
   isShouldWrite() {
     return true;
@@ -40,7 +40,7 @@ class OnMemoryStrategy extends BackpressureStrategy {
 }
 
 class WaitStrategy extends BackpressureStrategy {
-  async handleBackpressure(writer, outerEvenetTarget) {
+  handleBackpressure(writer, outerEvenetTarget) {
     outerEvenetTarget.dispatchEvent(new CustomEvent(EventType.BACKPRESSURE, {
       detail: {
         waitUntilDrain: () => once(writer, EventType.DRAIN)

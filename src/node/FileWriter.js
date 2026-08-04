@@ -20,21 +20,15 @@ export class StreamFileWriter extends Writer {
    * 
    * @param {object} config
    * @param {string} config.path
+   * @param {BackpressureStrategy} config.backpressure
    */
   constructor(config) {
-    super(config);
+    super();
+    this.#backpressureStrategy = config.backpressure ?? BackpressureStrategy.Wait();
     this.#innerWriter = new FileStreamWriter(config.path);
     this.#innerWriter.on(EventType.ERROR, err => {
       this._getEventTarget().dispatchEvent(new CustomEvent(EventType.ERROR, { detail: err }));
     });
-  }
-
-  /**
-   * @override
-   */
-  setEventTarget(eventTarget) {
-    super.setEventTarget(eventTarget);
-
   }
 
   write(data) {
@@ -82,7 +76,6 @@ class FileStreamWriter extends Writable {
   get #flags() {
     //return fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND | fs.constants.O_SYNC;
     return fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND;
-
   }
   constructor(path, eventTarget, options = {}) {
     super({
@@ -133,5 +126,4 @@ class FileStreamWriter extends Writable {
   _final(callback) {
     fs.close(this.#fileHandle, callback);
   }
-
 }
