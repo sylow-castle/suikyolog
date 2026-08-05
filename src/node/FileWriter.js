@@ -73,6 +73,9 @@ export class StreamFileWriter extends Writer {
 class FileStreamWriter extends Writable {
   #fileHandle = null;
   #path = null;
+  #buffer = new Set();
+  #isSync = false;
+
   get #flags() {
     //return fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND | fs.constants.O_SYNC;
     return fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND;
@@ -106,13 +109,34 @@ class FileStreamWriter extends Writable {
   }
 
   _write(chunk, encoding, callback) {
-    fs.write(this.#fileHandle, chunk, callback);
+    if (this.#isSync) {
+      fs.writeSync(this.#fileHandle, chunk);
+    } else {
+      this.#buffer.add(chunk);
+      fs.write(this.#fileHandle, chunk, (err) => {
+        this.#buffer.delete(chunk);
+        callback(err);
+      });
+    }
+
   }
 
   _writev(chunks, callback) {
     const buffers = chunks.map(item => item.chunk);
+    if (this.#isSync) {
+      fs.writevSync(this.#fileHandle, buffers);
+    } else {
+      this.#buffer.add(buffers);
+      fs.writev(this.#fileHandle, buffers, (err) => {
+        this.#buffer.delete(buffers);
+        callback(err);
+      });
+    }
 
-    fs.writev(this.#fileHandle, buffers, callback);
+  }
+
+  flushSync() {
+
   }
 
   _destroy(err, callback) {
