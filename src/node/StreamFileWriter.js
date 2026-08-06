@@ -73,7 +73,10 @@ export class StreamFileWriter extends Writer {
 class FileStreamWriter extends Writable {
   #fileHandle = null;
   #path = null;
-  #buffer = new Set();
+  #incoming = [];
+  #inflight = new Set();
+  #incomingv = [];
+  #inflightv = new Set();
   #isSync = false;
 
   get #flags() {
@@ -112,30 +115,53 @@ class FileStreamWriter extends Writable {
     if (this.#isSync) {
       fs.writeSync(this.#fileHandle, chunk);
     } else {
-      this.#buffer.add(chunk);
-      fs.write(this.#fileHandle, chunk, (err) => {
-        this.#buffer.delete(chunk);
-        callback(err);
-      });
+      this.#incoming.push(chunk);
+      this.#flushAsync(callback, false);
     }
 
   }
 
   _writev(chunks, callback) {
     const buffers = chunks.map(item => item.chunk);
+
     if (this.#isSync) {
       fs.writevSync(this.#fileHandle, buffers);
     } else {
-      this.#buffer.add(buffers);
-      fs.writev(this.#fileHandle, buffers, (err) => {
-        this.#buffer.delete(buffers);
-        callback(err);
-      });
+      this.#incomingv.push(buffers);
+      this.#flushAsyncv(callback);
     }
 
   }
 
   flushSync() {
+    while (this.#incoming.length > 0) {
+      const chunk = this.#incoming.shift();
+      fs.writeSync(this.#fileHandle, chunk);
+    }
+
+    while (this.#incomingv.length > 0) {
+      const chunks = this.#incomingv.shift();
+      fs.writevSync(this.#fileHandle, chunks);
+    }
+
+  }
+
+  #flushAsync(callback) {
+    const chunk = this.#incoming.shift();
+    this.#inflight.add(chunk);
+    fs.write(this.#fileHandle, chunk, (err) => {
+      this.#inflight.delete(chunk);
+      callback(err);
+    });
+  }
+
+  #flushAsyncv(callback) {
+    const chunks = this.#incomingv.shift();
+    this.#inflightv.add(chunks);
+    fs.writev(this.#fileHandle, chunks, (err) => {
+      this.#inflightv.delete(chunks);
+      callback(err);
+    });
 
   }
 
@@ -148,6 +174,9 @@ class FileStreamWriter extends Writable {
   }
 
   _final(callback) {
-    fs.close(this.#fileHandle, callback);
+    if (this.#fileHandle !== null) {
+      fs.close(this.#fileHandle, callback);
+      this.#fileHandle = null;
+    }
   }
 }
