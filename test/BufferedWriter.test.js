@@ -8,6 +8,8 @@ describe.only("BufferedWriterクラスのテスト", () => {
 
     const inner = new MemoryWriter();
     const writer = new BufferedWriter(inner, 100, 50, 2000);
+    const et = new EventTarget();
+    writer.setEventTarget(et);
     writer.write("a".repeat(1025));
     await setTimeout(100, "result");
     expect(inner.getLogs()).toStrictEqual(["a".repeat(1025)]);
@@ -19,6 +21,8 @@ describe.only("BufferedWriterクラスのテスト", () => {
     const inner = new MemoryWriter();
     const nextStep = Date.now() + 60;
     const writer = new BufferedWriter(inner, 100, 50, 512);
+    const et = new EventTarget();
+    writer.setEventTarget(et);
     writer.write("entry 1");
     expect(inner.getLogs()).toStrictEqual([]);
 
@@ -38,6 +42,8 @@ describe.only("BufferedWriterクラスのテスト", () => {
 
     const inner = new MemoryWriter();
     const writer = new BufferedWriter(inner, 100, 10000, 12,);
+    const et = new EventTarget();
+    writer.setEventTarget(et);
     writer.write(bigStr);
     expect(inner.getLogs()).toStrictEqual([]);
 

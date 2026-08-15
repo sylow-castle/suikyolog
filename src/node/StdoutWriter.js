@@ -10,14 +10,22 @@ export class StdoutWriter extends Writer {
   /**
    * 標準出力に書き込む
    * @override
-   * @async
    * @param {string} frame
-   * @throw Error 標準出力でエラーが発生した場合
+   * @param {(err : Error | null) => void} callback
    */
-  write(frame) {
-    stdout.write(frame + "\n");
+  write(frame, callback) {
+    try {
+      stdout.write(frame + "\n");
+      callback(null);
+    } catch(err) {
+      callback(err)
+    }
   }
 
+  /**
+   * 標準出力に書き込む
+   * @param {string} frame 
+   */
   writeSync(frame) {
     stdout.write(frame + "\n");
   }
@@ -30,14 +38,21 @@ export class StderrWriter extends Writer {
   /**
    * 標準エラーに書き込む
    * @override
-   * @async
    * @param {string} frame
-   * @throw Error 標準出力でエラーが発生した場合
+   * @param {(err: Error | null) => void} callback
    */
-  write(frame) {
-    stderr.write(frame + "\n");
+  write(frame, callback) {
+    try {
+      stderr.write(frame + "\n");
+    } catch(err) {
+      callback(err)
+    }
   }
 
+  /**
+   * 
+   * @param {string} frame 
+   */
   writeSync(frame) {
     stderr.write(frame + "\n");
   }

@@ -23,25 +23,32 @@ export class FetchWriter extends Writer {
    * 
    * @override
    * @param {string} frame 
+   * @param {(err : Error | null) => void}
    */
-  write(frame) {
+  write(frame, callback) {
     fetch(this.#url, {
       ...this.#config,
       body: frame
     }).then(res => {
       if (res.ok) {
         this._getEventTarget().dispatchEvent(new CustomEvent(EventType.WRITTEN, {
-          detail: res
+          detail: {
+            src: this,
+            res
+          }
         }));
       } else {
         this._getEventTarget().dispatchEvent(new CustomEvent(EventType.ERROR, {
-          detail: res
+          detail: {
+            src: this,
+            res
+          }
         }));
       }
-    }).catch(err => {
-      this._getEventTarget().dispatchEvent(new CustomEvent(EventType.ERROR, {
-        error: err
-      }));
-    });
+    }).catch(callback);
+  }
+
+  get canSync() {
+    return false;
   }
 }

@@ -6,7 +6,7 @@ import { TransporterBuilder } from "../src/core/TransporterBuilder.js";
 import * as EventType from "../src/core/EventType.js";
 import { BufferedWriter } from "../src/core/BufferedWriter.js";
 import { SyncFileWriter } from "../src/node/SyncFileWriter.js";
-import { StreamFileWriter } from "../src/node/FileWriter.js";
+import { StreamFileWriter } from "../src/node/StreamFileWriter.js";
 import { BackpressureStrategy } from "../src/node/BackpressureStrategy.js";
 
 let writer = null;

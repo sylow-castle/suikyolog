@@ -11,8 +11,9 @@ export class MemoryWriter extends Writer {
    *
    * @overrider
    */
-  write(frame) {
+  write(frame, callback) {
     this.#logs.push(frame);
+    callback(null);
   }
 
   /**

@@ -1,9 +1,22 @@
 import { Writer } from "./Writer.js";
+import * as EventType from "./EventType.js"
 
 const MAX_CHAR_BYTE = 4;
+
+const STATE = Object.freeze({
+  EXEC: {
+    IDLE: "idle",
+    FLUSHING: "flushing"
+  },
+  VOLUME: {
+    WRITABLE: "writable",
+    BACKPRESSURE: "backpressure"
+  }
+});
+
 export class BufferedWriter extends Writer {
   #inner = null;
-  #queue = [];
+  #incomingQueue = [];
   #maxQueueVolume = 16 * 1024; //byte
   #maxQueueLength = 100;       //entry
   #flushInterval = 100;        //ms
@@ -12,6 +25,15 @@ export class BufferedWriter extends Writer {
   #timeoutId = null;
   #encoder = new TextEncoder();
   #lastFlushTime = Date.now();
+  /**
+   * @property { "writable" | "backpressure"} volumeState
+   */
+  #stateVolume = STATE.VOLUME.WRITABLE;
+
+  /**
+   * @property { "idle" | "flushing"} execState
+   */
+  #stateExec = STATE.EXEC.IDLE;
 
   /**
    * @param {Writer} inner - writer which wanted to add buffering
@@ -51,7 +73,7 @@ export class BufferedWriter extends Writer {
     }, this.#flushInterval);
   }
 
-  write(data) {
+  write(data, callback) {
     //イベントループが回っていない場合に備えての経過時間確認
     //同期書き込みを想定した場合
     const currentTime = Date.now();
@@ -65,31 +87,97 @@ export class BufferedWriter extends Writer {
     const { written } = this.#encoder.encodeInto(data, this.#maxBuffer);
 
     //改行分を勘案（2行目以降の場合のみ追加）
-    const entryByteSize = written + (this.#queue.length >= 1 ? 1 : 0);
+    const entryByteSize = written + (this.#incomingQueue.length >= 1 ? 1 : 0);
     this.#currentQueueVolume += entryByteSize;
 
-    this.#queue.push(data);
+    //背圧発生時に通知する
+    this.#incomingQueue.push(data);
+
+    //容量状態の更新
+    const beforeVol = this.#stateVolume;
+    //初期状態を入れることで状態nullは決してしない
+    let afterVol = STATE.VOLUME.WRITABLE;
 
     if (this.#currentQueueVolume >= this.#maxQueueVolume ||
-      this.#queue.length >= this.#maxQueueLength ||
+      this.#incomingQueue.length >= this.#maxQueueLength) {
+      afterVol = STATE.VOLUME.BACKPRESSURE
+    }
+
+    this.#stateVolume = afterVol;
+
+    if (beforeVol === STATE.VOLUME.WRITABLE && afterVol === STATE.VOLUME.BACKPRESSURE) {
+      this._getEventTarget().dispatchEvent(new CustomEvent(EventType.BACKPRESSURE, {
+        detail: {
+          src: this
+        }
+      }));
+    }
+
+    if (this.#stateVolume === STATE.VOLUME.BACKPRESSURE ||
       currentInterval >= this.#flushInterval) {
-      this.flush();
+      this.flush(callback);
     }
   }
 
   /**
    * 
    * @returns 
+   * @param {(err) => void } callback
    */
-  flush() {
-    if (this.#queue.length === 0) {
+  flush(callback) {
+    if (this.#incomingQueue.length === 0) {
       this.#resetTimer();
       return;
     }
 
-    this.#inner.write(this.#queue.join('\n'));
+    const beforeExec = this.#stateExec
+    let afterExec = STATE.EXEC.FLUSHING;
 
-    this.#reset();
+    if (beforeExec === STATE.EXEC.FLUSHING && afterExec === STATE.EXEC.FLUSHING) {
+      return;
+    }
+
+    this.#lastFlushTime = Date.now();
+    this.#stateExec = afterExec;
+    const inflightQueue = this.#incomingQueue;
+    const inflightVolume = this.#currentQueueVolume;
+    const inflightText = inflightQueue.join("\n")
+    this.#incomingQueue = [];
+    this.#currentQueueVolume = 0;
+
+    this.#inner.write(inflightText, (err) => {
+      if (err) {
+        this.#incomingQueue.unshift(...inflightQueue);
+        this.#currentQueueVolume += inflightVolume;
+        callback(err);
+      }
+
+      const beforeVol = this.#stateVolume;
+      let afterVol = STATE.VOLUME.WRITABLE;
+      if (this.#currentQueueVolume >= this.#maxQueueVolume ||
+        this.#incomingQueue.length >= this.#maxQueueLength) {
+        afterVol = STATE.VOLUME.BACKPRESSURE
+      }
+
+      if (beforeVol === STATE.VOLUME.BACKPRESSURE && afterVol === STATE.VOLUME.WRITABLE) {
+        this._getEventTarget().dispatchEvent(new CustomEvent(EventType.DRAIN, {
+          detail: {
+            src: this
+          }
+        }));
+      }
+
+      this.#stateExec = STATE.EXEC.IDLE;
+
+      if (this.#incomingQueue.length > 0 &&
+        (this.#stateVolume === STATE.VOLUME.BACKPRESSURE ||
+          Date.now() - this.#lastFlushTime >= this.#flushInterval)) {
+        //同期的にコールバックを実行する場合のスタックオーバーフロー避け
+        queueMicrotask(() => this.flush(callback));
+      }
+    });
+
+    this.#resetTimer();
   }
 
   /**
@@ -98,21 +186,28 @@ export class BufferedWriter extends Writer {
    * @override
    */
   flushSync() {
-    if (this.#queue.length === 0) {
+    if (this.#incomingQueue.length === 0) {
       return;
     }
     if (!this.#inner.canSync) {
       return;
     }
 
-    this.#inner.writeSync(this.#queue.join('\n'));
-    this.#reset();
-  }
-
-  #reset() {
     this.#lastFlushTime = Date.now();
+    this.#inner.writeSync(this.#incomingQueue.join('\n'));
     this.#currentQueueVolume = 0;
-    this.#queue = [];
+    this.#incomingQueue = [];
+
+    const beforeVol = this.#stateVolume;
+    let afterVol = STATE.VOLUME.WRITABLE;
+    if (this.#currentQueueVolume >= this.#maxQueueVolume ||
+      this.#incomingQueue.length >= this.#maxQueueLength) {
+      afterVol = STATE.VOLUME.BACKPRESSURE
+    }
+
+    if (beforeVol === STATE.VOLUME.BACKPRESSURE && afterVol === STATE.VOLUME.WRITABLE) {
+      this._getEventTarget().dispatchEvent(new CustomEvent(EventType.DRAIN));
+    }
 
     this.#resetTimer();
   }

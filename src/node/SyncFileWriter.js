@@ -17,19 +17,28 @@ export class SyncFileWriter extends Writer {
     this.#fd = fs.openSync(this.#path, flags);
   }
 
-  reload() {
-    fs.closeSync(this.#fd);
-    const flags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND;
-    this.#fd = fs.openSync(this.#path, flags);
-  }
 
   /**
+   * 継承元では非同期想定ですが、このクラスでは同期APIで動作します。
+   * どちらにせよcallbackはキックされます。
    * @override
+   * @param {string} frame
+   * @param {(err : Error | null) => void} callback
    */
-  write(frame) {
-    this.writeSync(frame);
+  write(frame, callback) {
+    try {
+      this.writeSync(frame);
+      callback(null);
+    } catch(err){
+      callback(err);
+    }
   }
 
+
+  /**
+   * 同期的にファイルに書き込みます
+   * @param {string} frame 
+   */
   writeSync(frame) {
     fs.writeSync(this.#fd, frame + '\n');
   }
@@ -37,6 +46,16 @@ export class SyncFileWriter extends Writer {
   get canSync() {
     return true;
   }
+
+  /**
+   * ファイルディスクリプタを一回閉じ再度開きます。
+   */
+  reload() {
+    fs.closeSync(this.#fd);
+    const flags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_APPEND;
+    this.#fd = fs.openSync(this.#path, flags);
+  }
+
 
   /**
    * ファイルディスクリプタを同期的に閉じます。

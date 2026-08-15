@@ -13,9 +13,15 @@ export class ConsoleWriter extends Writer {
    * コンソールに出力する
    * @override
    * @param {string} frame
+   * @param {(err:Error | null) => void} callback
    */
-  write(frame) {
-    console.log(frame);
+  write(frame, callback) {
+    try {
+      this.writeSync(frame);
+      callback(null);
+    } catch(err) {
+      callback(err);
+    }
   }
 
   /**
@@ -24,7 +30,7 @@ export class ConsoleWriter extends Writer {
    * @param {string} frame 
    */
   writeSync(frame) {
-    this.write(frame);
+    console.log(frame);
   }
 
   /**

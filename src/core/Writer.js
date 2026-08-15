@@ -23,18 +23,38 @@ export class Writer extends Transporter {
    * @param {SyslogStmt} payload 
    */
   transport(payload) {
-    this.write(this[_encoder].encode(payload));
+    this.write(this[_encoder].encode(payload), this.dispatchError);
+  }
 
+  /**
+   * 渡されたErrorオブジェクトでerrorイベントを発行します。
+   * nullを渡されたときは何もしません。
+   * @param {Error | null} err 初期値はnullです
+   */
+  dispatchError(err = null) {
+    if(!err) {
+      return;
+    }
+
+    this._getEventTarget.dispatchEvent(new CustomEvent(EventType.Error, {
+      detail: {
+        src: this,
+        err
+      }
+    }));
   }
 
   /**
    * 出口に沿った書き出し処理を記述します
    * @abstract
    * @param {string | byte[]} _frame 
+   * @param {(err: Error | null) => void} _callback
    */
-  write(_frame) {
+  write(_frame, _callback) {
     throw new Error("not implemented")
   }
+
+
 
   /**
    * 同期での書き出し処理を記述します
@@ -46,8 +66,10 @@ export class Writer extends Transporter {
 
   /**
    * バッファリングしている場合の書き出し処理を記述します
+   * @param {(err: Error | null) => void} callback
    */
-  flush() {
+  flush(callback) {
+    callback(null);
   }
 
   /**
@@ -116,11 +138,13 @@ export class NullWriter extends Writer {
   }
 
   /**
-   * 何もしない
+   * コールバック呼ぶだけ。
    * 
    * @param {string | byte[]} _frame 
+   * @param {(err : Error | null) => void} callback
    */
-  write(_frame) {
+  write(_frame, callback) {
+    callback(null);
   }
 
   /**
@@ -130,24 +154,13 @@ export class NullWriter extends Writer {
   writeSync(_frame) {
   }
 
-  /**
-   * 何もしない
-   */
-  flush() {
-  }
-
-  /**
-   * 何もしない
-   */
-  flushSync() {
-  }
 
   /**
    * 同期書き込みをサポートするかを返却する
    * @returns {boolean}
    */
   get canSync() {
-    return false;
+    return true;
   }
 
   /**
