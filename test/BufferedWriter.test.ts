@@ -1,7 +1,7 @@
 import { setTimeout } from "node:timers/promises";
 import { describe, test, expect } from "vitest"
 import { BufferedWriter } from "../src/core/BufferedWriter.js";
-import { MemoryWriter } from "../src/core";
+import { MemoryWriter } from "../src/core/index.js";
 import * as EventType from "../src/core/EventType.js";
 
 describe("BufferedWriterクラスのテスト", () => {
