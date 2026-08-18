@@ -47,8 +47,4 @@ export class FetchWriter extends Writer {
       }
     }).catch(callback);
   }
-
-  get canSync() {
-    return false;
-  }
 }

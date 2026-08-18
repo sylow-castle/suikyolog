@@ -70,7 +70,7 @@ export class Transporter {
    * 冪等性確保のため２回目以降は無視されます。
    */
   close() {
-    if (this._isClosed) {
+    if (this.isClosed) {
       return;
     }
 

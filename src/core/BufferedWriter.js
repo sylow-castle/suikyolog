@@ -1,4 +1,4 @@
-import { Writer } from "./Writer.js";
+import { Writer, SyncWriter } from "./Writer.js";
 import * as EventType from "./EventType.js"
 
 const MAX_CHAR_BYTE = 4;
@@ -17,14 +17,16 @@ const STATE = Object.freeze({
 export class BufferedWriter extends Writer {
   #inner = null;
   #incomingQueue = [];
-  #maxQueueVolume = 16 * 1024; //byte
-  #maxQueueLength = 100;       //entry
+  #incomingQueueVolume = 0;     //byte
   #flushInterval = 100;        //ms
-  #currentQueueVolume = 0;     //byte
-  #maxBuffer = new Uint8Array(1024);
+  #lastFlushTime = 0;
+  #flushPolicy = null;
   #timeoutId = null;
-  #encoder = new TextEncoder();
-  #lastFlushTime = Date.now();
+  #utf8Calculator = new UTF8Calculator();
+  #_now = null;
+  #_setTimeout = null;
+  #_clearTimeout = null;
+
   /**
    * @property { "writable" | "backpressure"} volumeState
    */
@@ -37,13 +39,31 @@ export class BufferedWriter extends Writer {
 
   /**
    * @param {Writer} inner - writer which wanted to add buffering
-   * @param {number} length - default 100 entries
-   * @param {number} interval - default 100 ms
-   * @param {number} volume - default 16 * 1024 byte
+   * @param {Object} options 
+   * @param {number} options.length - default 100 entries
+   * @param {number} options.interval - default 100 ms
+   * @param {number} options.volume - default 16 * 1024 byte
    */
-  constructor(inner, length = 100, interval = 100, volume = 16 * 1024) {
+  constructor(inner, options) {
     super();
     this.#inner = inner;
+
+    const defaultOptions = {
+      length: 100,
+      interval: 100,
+      volume: 16 * 1024,
+      delimiter: "\n",
+      _now: Date.now,
+      _setTimeout: setTimeout,
+      _clearTimeout: clearTimeout,
+      _flushPolicyClass: FlushPolicy
+    }
+    options = {
+      ...defaultOptions,
+      ...options
+    }
+
+    const { length, interval, volume } = options;
 
     if (typeof length !== "number" || Number.isNaN(length)) {
       throw new Error(`invalid length: ${length}`);
@@ -57,65 +77,58 @@ export class BufferedWriter extends Writer {
       throw new Error(`invalid volume: ${volume}`);
     }
 
-    this.#maxQueueLength = length;
+
+    this.#_now = options._now;
+    this.#_setTimeout = options._setTimeout;
+    this.#_clearTimeout = options._clearTimeout;
+
+    this.#flushPolicy = new options._flushPolicyClass(volume, length);
     this.#flushInterval = interval;
-    this.#maxQueueVolume = volume;
-    this.#resetTimer()
+    this.#lastFlushTime = this.#_now();
   }
 
   //イベントループが回る非同期書き込みにはタイムアウトループで対応
   #resetTimer() {
     if (this.#timeoutId !== null) {
-      clearTimeout(this.#timeoutId);
+      this.#_clearTimeout(this.#timeoutId);
     }
-    this.#timeoutId = setTimeout(() => {
-      this.flush();
+    this.#timeoutId = this.#_setTimeout(() => {
+      this.flush((err) => {
+        if (err) {
+          this._getEventTarget().dispatchEvent(new CustomEvent(EventType.ERROR, {
+            detail: {
+              src: this,
+              err: err,
+            }
+          }));
+        }
+      });
     }, this.#flushInterval);
   }
 
   write(data, callback) {
+    if (this.#timeoutId === null) {
+      this.#resetTimer();
+    }
+
     //イベントループが回っていない場合に備えての経過時間確認
-    //同期書き込みを想定した場合
-    const currentTime = Date.now();
-    const currentInterval = currentTime - this.#lastFlushTime;
+    const currentInterval = this.#_now() - this.#lastFlushTime;
 
     //文字データからバイト数計算してキューの大きさ（バイト）を計算
-    const maxBufferLength = MAX_CHAR_BYTE * data.length;
-    if (this.#maxBuffer.length < maxBufferLength) {
-      this.#maxBuffer = new Uint8Array(maxBufferLength);
-    }
-    const { written } = this.#encoder.encodeInto(data, this.#maxBuffer);
+    const written = this.#utf8Calculator.calculateByte(data);
 
     //改行分を勘案（2行目以降の場合のみ追加）
     const entryByteSize = written + (this.#incomingQueue.length >= 1 ? 1 : 0);
-    this.#currentQueueVolume += entryByteSize;
+    this.#incomingQueueVolume += entryByteSize;
 
-    //背圧発生時に通知する
     this.#incomingQueue.push(data);
-
-    //容量状態の更新
-    const beforeVol = this.#stateVolume;
-    //初期状態を入れることで状態nullは決してしない
-    let afterVol = STATE.VOLUME.WRITABLE;
-
-    if (this.#currentQueueVolume >= this.#maxQueueVolume ||
-      this.#incomingQueue.length >= this.#maxQueueLength) {
-      afterVol = STATE.VOLUME.BACKPRESSURE
-    }
-
-    this.#stateVolume = afterVol;
-
-    if (beforeVol === STATE.VOLUME.WRITABLE && afterVol === STATE.VOLUME.BACKPRESSURE) {
-      this._getEventTarget().dispatchEvent(new CustomEvent(EventType.BACKPRESSURE, {
-        detail: {
-          src: this
-        }
-      }));
-    }
+    this.#updateStateVolume();
 
     if (this.#stateVolume === STATE.VOLUME.BACKPRESSURE ||
       currentInterval >= this.#flushInterval) {
       this.flush(callback);
+    } else {
+      callback(null)
     }
   }
 
@@ -127,51 +140,41 @@ export class BufferedWriter extends Writer {
   flush(callback) {
     if (this.#incomingQueue.length === 0) {
       this.#resetTimer();
+      callback(null);
       return;
     }
 
     const beforeExec = this.#stateExec
-    let afterExec = STATE.EXEC.FLUSHING;
+    const afterExec = STATE.EXEC.FLUSHING;
 
     if (beforeExec === STATE.EXEC.FLUSHING && afterExec === STATE.EXEC.FLUSHING) {
+      callback(null);
       return;
     }
-
-    this.#lastFlushTime = Date.now();
     this.#stateExec = afterExec;
+    this.#lastFlushTime = this.#_now();
+
     const inflightQueue = this.#incomingQueue;
-    const inflightVolume = this.#currentQueueVolume;
+    const inflightVolume = this.#incomingQueueVolume;
     const inflightText = inflightQueue.join("\n")
     this.#incomingQueue = [];
-    this.#currentQueueVolume = 0;
+    this.#incomingQueueVolume = 0;
 
     this.#inner.write(inflightText, (err) => {
       if (err) {
         this.#incomingQueue.unshift(...inflightQueue);
-        this.#currentQueueVolume += inflightVolume;
+        this.#incomingQueueVolume += inflightVolume;
         callback(err);
+      } else {
+        callback(null);
       }
 
-      const beforeVol = this.#stateVolume;
-      let afterVol = STATE.VOLUME.WRITABLE;
-      if (this.#currentQueueVolume >= this.#maxQueueVolume ||
-        this.#incomingQueue.length >= this.#maxQueueLength) {
-        afterVol = STATE.VOLUME.BACKPRESSURE
-      }
-
-      if (beforeVol === STATE.VOLUME.BACKPRESSURE && afterVol === STATE.VOLUME.WRITABLE) {
-        this._getEventTarget().dispatchEvent(new CustomEvent(EventType.DRAIN, {
-          detail: {
-            src: this
-          }
-        }));
-      }
-
+      this.#updateStateVolume();
       this.#stateExec = STATE.EXEC.IDLE;
 
       if (this.#incomingQueue.length > 0 &&
         (this.#stateVolume === STATE.VOLUME.BACKPRESSURE ||
-          Date.now() - this.#lastFlushTime >= this.#flushInterval)) {
+          this.#_now() >= this.#lastFlushTime + this.#flushInterval)) {
         //同期的にコールバックを実行する場合のスタックオーバーフロー避け
         queueMicrotask(() => this.flush(callback));
       }
@@ -189,31 +192,49 @@ export class BufferedWriter extends Writer {
     if (this.#incomingQueue.length === 0) {
       return;
     }
-    if (!this.#inner.canSync) {
+    if (!(this.#inner instanceof SyncWriter)) {
       return;
     }
 
-    this.#lastFlushTime = Date.now();
+    this.#lastFlushTime = this.#_now();
     this.#inner.writeSync(this.#incomingQueue.join('\n'));
-    this.#currentQueueVolume = 0;
+    //書き込みは同期なので特に気にせず状態をリセットできる。
+    this.#incomingQueueVolume = 0;
     this.#incomingQueue = [];
+    this.#_clearTimeout(this.#timeoutId);
+    this.#timeoutId = null;
 
-    const beforeVol = this.#stateVolume;
-    let afterVol = STATE.VOLUME.WRITABLE;
-    if (this.#currentQueueVolume >= this.#maxQueueVolume ||
-      this.#incomingQueue.length >= this.#maxQueueLength) {
-      afterVol = STATE.VOLUME.BACKPRESSURE
-    }
+    this.#updateStateVolume();
 
-    if (beforeVol === STATE.VOLUME.BACKPRESSURE && afterVol === STATE.VOLUME.WRITABLE) {
-      this._getEventTarget().dispatchEvent(new CustomEvent(EventType.DRAIN));
-    }
-
-    this.#resetTimer();
   }
 
-  get canSync() {
-    return this.#inner.canSync;
+  #updateStateVolume() {
+    const beforeVol = this.#stateVolume;
+    let afterVol = STATE.VOLUME.WRITABLE;
+    if (this.#flushPolicy.estimate(this.#incomingQueueVolume, this.#incomingQueue.length)) {
+      afterVol = STATE.VOLUME.BACKPRESSURE;
+    }
+
+    if (beforeVol === STATE.VOLUME.WRITABLE && afterVol === STATE.VOLUME.BACKPRESSURE) {
+      this._getEventTarget().dispatchEvent(this.#createCustomEvent(EventType.BACKPRESSURE));
+    } else if (beforeVol === STATE.VOLUME.BACKPRESSURE && afterVol === STATE.VOLUME.WRITABLE) {
+      this._getEventTarget().dispatchEvent(this.#createCustomEvent(EventType.DRAIN));
+    }
+
+    this.#stateVolume = afterVol;
+  }
+
+  /**
+   * 
+   * @param {string} eventType 
+   * @returns {CustomEvent}
+   */
+  #createCustomEvent(eventType) {
+    return new CustomEvent(eventType, {
+      detail: {
+        src: this
+      }
+    });
   }
 
   /**
@@ -221,11 +242,11 @@ export class BufferedWriter extends Writer {
    * @override
    */
   reload() {
-    if (this.canSync) {
+    if (this.#inner instanceof SyncWriter) {
       this.flushSync();
     } else {
       //ベストエフォート
-      this.flush();
+      this.flush(() => { });
     }
 
     this.#inner.reload();
@@ -240,15 +261,15 @@ export class BufferedWriter extends Writer {
       return;
     }
 
-    if (this.canSync) {
+    if (this.#inner instanceof SyncWriter) {
       this.flushSync();
     } else {
       //ベストエフォート
-      this.flush();
+      this.flush(() => { });
     }
 
     if (this.#timeoutId !== null) {
-      clearTimeout(this.#timeoutId);
+      this.#_clearTimeout(this.#timeoutId);
       this.#timeoutId = null;
     }
 
@@ -257,6 +278,47 @@ export class BufferedWriter extends Writer {
     }
 
     this._isClosed = true;
+  }
+
+}
+
+export class FlushPolicy {
+  #maxVolume = 0;
+  #maxLength = 0;
+
+  constructor(volume, length) {
+    this.#maxLength = length;
+    this.#maxVolume = volume;
+  }
+
+  /**
+   * flushが必要かどうかを推定する
+   * @param {number} volume 
+   * @param {number} length 
+   * @returns {boolean} trueならflushすべき
+   */
+  estimate(volume, length) {
+    return volume >= this.#maxVolume || length >= this.#maxLength
+  }
+
+}
+
+export class UTF8Calculator {
+  #encoder = new TextEncoder();
+  #maxBuffer = new Uint8Array(1024);
+
+  /**
+   * 文字列のバイト数（UTF8エンコーディング）を計算する
+   * @param {string} frame 
+   * @returns {number}
+   */
+  calculateByte(frame) {
+    const maxBufferLength = MAX_CHAR_BYTE * frame.length;
+    if (this.#maxBuffer.length < maxBufferLength) {
+      this.#maxBuffer = new Uint8Array(maxBufferLength);
+    }
+    const { written } = this.#encoder.encodeInto(frame, this.#maxBuffer);
+    return written;
   }
 
 }

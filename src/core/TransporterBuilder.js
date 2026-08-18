@@ -86,7 +86,7 @@ export class TransporterBuilder {
 
   /**
    * @param {function(FanoutTransporterBuilder): void}
-   * @returns {FanoutTransporterBuilder}
+   * @returns {FinishedTransporterBuilder}
    */
   fanout(callback) {
     const builder = new FanoutTransporterBuilder(this.#eventTarget);

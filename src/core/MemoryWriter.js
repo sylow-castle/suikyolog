@@ -1,6 +1,6 @@
-import { Writer } from "./Writer.js";
+import { SyncWriter } from "./Writer.js";
 
-export class MemoryWriter extends Writer {
+export class MemoryWriter extends SyncWriter {
   #logs = []
 
   constructor() {
@@ -12,7 +12,7 @@ export class MemoryWriter extends Writer {
    * @overrider
    */
   write(frame, callback) {
-    this.#logs.push(frame);
+    this.writeSync(frame);
     callback(null);
   }
 
@@ -21,15 +21,7 @@ export class MemoryWriter extends Writer {
    * @param {string | byte[]} frame
    */
   writeSync(frame) {
-    this.write(frame);
-  }
-
-  /**
-   * @override
-   * @returns {boolean}
-   */
-  get canSync() {
-    return true;
+    this.#logs.push(frame);
   }
 
   /**
@@ -38,5 +30,13 @@ export class MemoryWriter extends Writer {
    */
   getLogs() {
     return this.#logs.slice();
+  }
+
+  /**
+   * 配列に蓄えていたログを空っぽにします。
+   * @override
+   */
+  reload() {
+    this.#logs = [];
   }
 }

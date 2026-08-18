@@ -1,13 +1,11 @@
 import { Transporter } from "./Transporter.js";
+import { EventType } from "./EventType.js";
 
 export const _encoder = Symbol("encoder");
 
 export class Writer extends Transporter {
 
 
-  /**
-   * 
-   */
   constructor() {
     super();
     if (new.target === Writer) {
@@ -32,7 +30,7 @@ export class Writer extends Transporter {
    * @param {Error | null} err 初期値はnullです
    */
   dispatchError(err = null) {
-    if(!err) {
+    if (!err) {
       return;
     }
 
@@ -54,44 +52,17 @@ export class Writer extends Transporter {
     throw new Error("not implemented")
   }
 
-
-
-  /**
-   * 同期での書き出し処理を記述します
-   * @param {string | byte[]} _frame 
-   */
-  writeSync(_frame) {
-    throw new Error("sync operation is unsupported")
-  }
-
-  /**
-   * バッファリングしている場合の書き出し処理を記述します
-   * @param {(err: Error | null) => void} callback
-   */
-  flush(callback) {
-    callback(null);
-  }
-
-  /**
-   * バッファリングしている場合の同期での書き出し処理を記述します
-   */
-  flushSync() {
-  }
-
-  /**
-   * 同期書き込みをサポートするかを返却する
-   * @returns {boolean}
-   */
-  get canSync() {
-    return false;
-  }
-
   /**
    * リソース開放処理を記述します。
    * 冪等性を確保するよう実装してください。
+   * @override
    */
   close() {
+    if (this.isClosed) {
+      return
+    }
 
+    this._isClosed = true;
   }
 
   /**
@@ -130,7 +101,25 @@ export class Writer extends Transporter {
 
 }
 
-export class NullWriter extends Writer {
+export class SyncWriter extends Writer {
+  constructor() {
+    super();
+    if (new.target === SyncWriter) {
+      throw Error(`This is abstract class: ${SyncWriter.name}`);
+    }
+
+  }
+
+  /**
+   * 同期での書き出し処理を記述します
+   * @param {string | byte[]} _frame 
+   */
+  writeSync(_frame) {
+    throw new Error("not implemented")
+  }
+}
+
+export class NullWriter extends SyncWriter {
 
   constructor() {
     super();
@@ -140,6 +129,7 @@ export class NullWriter extends Writer {
   /**
    * コールバック呼ぶだけ。
    * 
+   * @override
    * @param {string | byte[]} _frame 
    * @param {(err : Error | null) => void} callback
    */
@@ -149,22 +139,10 @@ export class NullWriter extends Writer {
 
   /**
    * 何もしない
+   * @override
    * @param {string | byte[]} _frame 
    */
   writeSync(_frame) {
   }
 
-
-  /**
-   * 同期書き込みをサポートするかを返却する
-   * @returns {boolean}
-   */
-  get canSync() {
-    return true;
-  }
-
-  /**
-   * 何もしない
-   */
-  close() { }
 }

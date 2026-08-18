@@ -2,15 +2,16 @@ import { setTimeout } from "node:timers/promises";
 import { describe, test, expect } from "vitest"
 import { BufferedWriter } from "../src/core/BufferedWriter.js";
 import { MemoryWriter } from "../src/core";
+import * as EventType from "../src/core/EventType.js";
 
-describe.only("BufferedWriterクラスのテスト", () => {
+describe("BufferedWriterクラスのテスト", () => {
   test("時間制限（非同期）によるフラッシュ", async () => {
 
     const inner = new MemoryWriter();
-    const writer = new BufferedWriter(inner, 100, 50, 2000);
+    const writer = new BufferedWriter(inner, { length: 100, interval: 50, volume: 2000 });
     const et = new EventTarget();
     writer.setEventTarget(et);
-    writer.write("a".repeat(1025));
+    writer.write("a".repeat(1025), () => { });
     await setTimeout(100, "result");
     expect(inner.getLogs()).toStrictEqual(["a".repeat(1025)]);
     writer.close();
@@ -20,16 +21,16 @@ describe.only("BufferedWriterクラスのテスト", () => {
 
     const inner = new MemoryWriter();
     const nextStep = Date.now() + 60;
-    const writer = new BufferedWriter(inner, 100, 50, 512);
+    const writer = new BufferedWriter(inner, { length: 100, interval: 50, volume: 512 });
     const et = new EventTarget();
     writer.setEventTarget(et);
-    writer.write("entry 1");
+    writer.write("entry 1", () => { });
     expect(inner.getLogs()).toStrictEqual([]);
 
     while (Date.now() < nextStep) {
       //do nothing;
     };
-    writer.write("entry 2");
+    writer.write("entry 2", () => { });
 
     expect(inner.getLogs()).toStrictEqual([["entry 1", "entry 2"].join("\n")]);
     writer.close();
@@ -41,14 +42,75 @@ describe.only("BufferedWriterクラスのテスト", () => {
   ])(`バイト数によるフラッシュ（bigStr: $bigStr）`, ({ bigStr }) => {
 
     const inner = new MemoryWriter();
-    const writer = new BufferedWriter(inner, 100, 10000, 12,);
+    const writer = new BufferedWriter(inner, { length: 100, interval: 10000, volume: 12 });
     const et = new EventTarget();
     writer.setEventTarget(et);
-    writer.write(bigStr);
+    writer.write(bigStr, () => { });
     expect(inner.getLogs()).toStrictEqual([]);
 
-    writer.write("b");
+    writer.write("b", () => { });
     expect(inner.getLogs()).toStrictEqual([[bigStr, "b"].join("\n")]);
+    writer.close();
+  });
+
+  test("イベント発行", async () => {
+    const inner = new MemoryWriter();
+    const writer = new BufferedWriter(inner, { length: 2, interval: 50, volume: 512 });
+    const et = new EventTarget();
+    writer.setEventTarget(et);
+    expect(inner.getLogs()).toStrictEqual([]);
+
+    let receivedBackpressure = false;
+    et.addEventListener(EventType.BACKPRESSURE, (e) => {
+      expect(e.type).toStrictEqual(EventType.BACKPRESSURE);
+      receivedBackpressure = true;
+    });
+
+    let receivedDrain = false;
+    et.addEventListener(EventType.DRAIN, (e) => {
+      expect(e.type).toStrictEqual(EventType.DRAIN);
+      receivedDrain = true;
+    });
+
+    writer.write("entry 1", () => { });
+    expect(receivedBackpressure).toStrictEqual(false);
+    expect(receivedDrain).toStrictEqual(false);
+
+    writer.write("entry 2", () => { });
+    expect(receivedBackpressure).toStrictEqual(true);
+    expect(receivedDrain).toStrictEqual(true);
+
+    writer.close();
+  });
+
+  test("flushSync", () => {
+
+    const inner = new MemoryWriter();
+    const writer = new BufferedWriter(inner, { length: 2, interval: 50, volume: 512 });
+    const et = new EventTarget();
+    writer.setEventTarget(et);
+    expect(inner.getLogs()).toStrictEqual([]);
+
+    let receivedBackpressure = false;
+    et.addEventListener(EventType.BACKPRESSURE, (e) => {
+      expect(e.type).toStrictEqual(EventType.BACKPRESSURE);
+      receivedBackpressure = true;
+    });
+
+    let receivedDrain = false;
+    et.addEventListener(EventType.DRAIN, (e) => {
+      expect(e.type).toStrictEqual(EventType.DRAIN);
+      receivedDrain = true;
+    });
+
+    writer.write("entry 1", () => { });
+    expect(receivedBackpressure).toStrictEqual(false);
+    expect(receivedDrain).toStrictEqual(false);
+
+    writer.flushSync();
+    expect(receivedBackpressure).toStrictEqual(false);
+    expect(receivedDrain).toStrictEqual(false);
+
     writer.close();
   });
 
@@ -66,7 +128,7 @@ describe.only("BufferedWriterクラスのテスト", () => {
   ])(`コンストラクタのバリデーション（$len, $intv, $vol）`, ({ len, intv, vol }) => {
 
     const inner = new MemoryWriter();
-    expect(() => new BufferedWriter(inner, len, intv, vol)).toThrow(/invalid length|invalid interval|invalid volume/);
+    expect(() => new BufferedWriter(inner, { length: len, interval: intv, volume: vol })).toThrow(/invalid length|invalid interval|invalid volume/);
   });
 
 

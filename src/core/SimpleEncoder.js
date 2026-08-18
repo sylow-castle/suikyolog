@@ -7,6 +7,7 @@ export class SimpleEncoder extends Encoder {
 
     /**
      * @param {import("./SyslogStmt.js").SyslogStmt} syslogStmt
+     * @return {string}
      */
     encode(syslogStmt) {
         const pri = syslogStmt.pri;

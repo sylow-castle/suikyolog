@@ -29,7 +29,6 @@ export class Logger {
   #transporter = null;
   #eventTarget = null;
 
-  #errorHandler = doNothing;
   #isMute = false;
   #isClosed = false;
 
@@ -117,7 +116,6 @@ export class Logger {
     const upper = levelStr.charAt(0).toUpperCase() + levelStr.slice(1)
     let finalStmt;
     const sevNum = SEVERITY_NUM[upper];
-
     if (typeof syslogStmt === "string") {
       finalStmt = this.#template.sev(sevNum).msg(syslogStmt).build();
     } else if (syslogStmt instanceof SyslogStmt) {
@@ -132,7 +130,7 @@ export class Logger {
         .sd(syslogStmt.sd)
         .msg(syslogStmt.msg).build()
     } else if (syslogStmt instanceof Error) {
-      finalStmt = this.#template.sev(upper).msg(syslogStmt.message + "\n" + syslogStmt.stack).build();
+      finalStmt = this.#template.sev(upper).msg(syslogStmt.stack).build();
     } else {
       finalStmt = this.#template.sev(upper).msg(syslogStmt.toString()).build();
     }
@@ -223,19 +221,6 @@ export class Logger {
   }
 
   /**
-   * トランスポーターでの出力中にエラーが発生した場合に呼び出されるコールバックを設定する。
-   * @param {(e: Error) => void} callback 
-   * @returns {Logger}
-   */
-  onError(callback) {
-    if (typeof callback !== 'function') {
-      throw new Error('Invalid callback');
-    }
-    this.#errorHandler = callback;
-    return this;
-  }
-
-  /**
    * syslogStmtをこのロガーの設定でSyslogStmtを生成し、ログを出力する。
    * @param {SyslogStmt} syslogStmt 
    */
@@ -287,7 +272,3 @@ export class Logger {
     this.#eventTarget.addEventListener(type, listener);
   }
 }
-
-function doNothing() {
-}
-

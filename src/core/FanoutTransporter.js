@@ -37,7 +37,7 @@ export class FanoutTransporter extends Transporter {
    * @override
    */
   close() {
-    if (this._isClosed) {
+    if (this.isClosed) {
       return;
     }
     this.#children.forEach(child => child.close());

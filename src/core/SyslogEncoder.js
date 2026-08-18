@@ -80,7 +80,7 @@ export class SyslogEncoder extends Encoder {
  * 
  * @abstract
  */
-export class StructureDataVisitor {
+export class StructuredDataVisitor {
   /**
    * @abstract
    * @param {string} _sdId 
@@ -146,7 +146,7 @@ class RingBufferCache {
 }
 
 /**
- * @implements {StructureDataVisitor}
+ * @implements {StructuredDataVisitor}
  */
 export class StructuredDataEncoder {
   #cache = new RingBufferCache();

@@ -1,12 +1,21 @@
-import * as EventTarget from "./EventType.js"
+import { EventType } from "./EventType.js";
 import { Writer } from "./Writer.js";
 
 export class OnBackpressureWriter extends Writer {
+  /**
+   * @param {Writer} inner 
+   * @returns {DropWriter}
+   */
   static Drop(inner) {
     return new DropWriter(inner);
   }
-  static Wait() {
 
+  /**
+   * @param {Writer} inner 
+   * @returns {WaitWriter}
+   */
+  static Wait(inner) {
+    return new WaitWriter(inner);
   }
 }
 
@@ -17,7 +26,8 @@ class DropWriter extends OnBackpressureWriter {
   #isDrop = false;
   #inner = null;
 
-  constructor(inner, callback) {
+  constructor(inner) {
+    super();
     this.#inner = inner;
   }
 
@@ -29,13 +39,13 @@ class DropWriter extends OnBackpressureWriter {
     super.setEventtarget(eventTarget);
 
     eventTarget.addEventListener(EventType.BACKPRESSURE, (event) => {
-      if(event.detail.src === this.inner) {
+      if (event.detail.src === this.inner) {
         this.#isDrop = true;
       }
     });
 
     eventTarget.addEventListener(EventType.DRAIN, (event) => {
-      if(event.detail.src === this.inner) {
+      if (event.detail.src === this.inner) {
         this.isDrop = false;
       }
     });
@@ -47,10 +57,10 @@ class DropWriter extends OnBackpressureWriter {
    * @param {(err : Error | null) => void } callback
    */
   write(frame, callback) {
-    if(this.#isDrop) {
+    if (this.#isDrop) {
       callback(null);
     } else {
-      this.inner.write(frame, callback);
+      this.#inner.write(frame, callback);
     }
   }
 
@@ -59,13 +69,13 @@ class DropWriter extends OnBackpressureWriter {
    * @param {string} frame 
    */
   writeSync(frame) {
-    if(!this.#isDrop) {
-      this.inner.writeSync(frame)
+    if (!this.#isDrop) {
+      this.#inner.writeSync(frame)
     }
   }
 
   get canSync() {
-    return this.inner.canSync;
+    return this.#inner.canSync;
   }
 }
 
@@ -93,5 +103,5 @@ class WaitWriter {
     eventTarget.addEventListener(EventType.BACKPRESSURE, async (event) => {
     });
   }
-  
+
 }

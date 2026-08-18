@@ -1,9 +1,9 @@
-import { Writer } from "./Writer.js";
+import { SyncWriter } from "./Writer.js";
 
 /**
  * コンソール出力をするトランスポーター
  */
-export class ConsoleWriter extends Writer {
+export class ConsoleWriter extends SyncWriter {
 
   constructor() {
     super();
@@ -19,7 +19,7 @@ export class ConsoleWriter extends Writer {
     try {
       this.writeSync(frame);
       callback(null);
-    } catch(err) {
+    } catch (err) {
       callback(err);
     }
   }
@@ -33,10 +33,4 @@ export class ConsoleWriter extends Writer {
     console.log(frame);
   }
 
-  /**
-   * @override
-   */
-  get canSync() {
-    return true;
-  }
 }
