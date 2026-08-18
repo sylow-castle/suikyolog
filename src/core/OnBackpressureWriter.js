@@ -1,4 +1,4 @@
-import { EventType } from "./EventType.js";
+import * as EventType from "./EventType.js";
 import { Writer } from "./Writer.js";
 
 export class OnBackpressureWriter extends Writer {
@@ -35,8 +35,8 @@ class DropWriter extends OnBackpressureWriter {
    * @override
    * @param {EventTarget} eventTarget
    */
-  setEventtarget(eventTarget) {
-    super.setEventtarget(eventTarget);
+  setEventTarget(eventTarget) {
+    super.setEventTarget(eventTarget);
 
     eventTarget.addEventListener(EventType.BACKPRESSURE, (event) => {
       if (event.detail.src === this.inner) {
@@ -74,22 +74,23 @@ class DropWriter extends OnBackpressureWriter {
     }
   }
 
-  get canSync() {
-    return this.#inner.canSync;
-  }
 }
 
 /**
  * 直下（inner）が
  */
-class WaitWriter {
+class WaitWriter extends OnBackpressureWriter {
   #inner = null;
+  #isBackpressure = false;
+  #drainPromise = null;
+  #resolveDrain = null;
 
   /**
    * 
    * @param {Writer} inner 
    */
   constructor(inner) {
+    super();
     this.#inner = inner;
   }
 
@@ -97,11 +98,69 @@ class WaitWriter {
    * @override
    * @param {EventTarget} eventTarget
    */
-  setEventtarget(eventTarget) {
-    super.setEventtarget(eventTarget);
+  setEventTarget(eventTarget) {
+    super.setEventTarget(eventTarget);
 
-    eventTarget.addEventListener(EventType.BACKPRESSURE, async (event) => {
+    eventTarget.addEventListener(EventType.BACKPRESSURE, (event) => {
+      if (event.detail?.src !== this.#inner) {
+        return;
+      }
+      this.#isBackpressure = true;
+      if (this.#drainPromise) {
+        return;
+      }
+      this.#drainPromise = new Promise((resolve) => {
+        this.#resolveDrain = resolve;
+      });
     });
+
+    eventTarget.addEventListener(EventType.DRAIN, (event) => {
+      if (event.detail?.src !== this.#inner) {
+        return;
+      }
+      this.#isBackpressure = false;
+
+      if (!this.#resolveDrain) {
+        return;
+      }
+
+      const resolve = this.#resolveDrain;
+      this.#drainPromise = null;
+      this.#resolveDrain = null;
+      resolve();
+    });
+  }
+
+  /**
+   * @ovberride
+   * @param {string} frame
+   * @param {(err : Error | null) => void} callback
+   */
+  async write(frame, callback) {
+    if (this.#isBackpressure && this.#drainPromise) {
+      await this.#drainPromise;
+    }
+
+    this.#inner.write(frame, callback);
+  }
+
+  /**
+   * @override
+   */
+  close() {
+    if (this.isClosed) {
+      return;
+    }
+    super.close();
+    this.#inner.close();
+  }
+
+  /**
+   * @override
+   */
+  reload() {
+    super.reload();
+    this.#inner.reload();
   }
 
 }

@@ -1,5 +1,5 @@
 import { Transporter } from "./Transporter.js";
-import { EventType } from "./EventType.js";
+import * as EventType from "./EventType.js";
 
 export const _encoder = Symbol("encoder");
 

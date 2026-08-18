@@ -19,19 +19,13 @@ export class SyncFileWriter extends Writer {
 
 
   /**
-   * 継承元では非同期想定ですが、このクラスでは同期APIで動作します。
-   * どちらにせよcallbackはキックされます。
+   * 非同期でファイルに書き込みます。
    * @override
    * @param {string} frame
    * @param {(err : Error | null) => void} callback
    */
   write(frame, callback) {
-    try {
-      this.writeSync(frame);
-      callback(null);
-    } catch(err){
-      callback(err);
-    }
+    fs.write(this.#fd, frame + "\n", callback);
   }
 
 

@@ -94,14 +94,10 @@ export class BufferedWriter extends Writer {
     }
     this.#timeoutId = this.#_setTimeout(() => {
       this.flush((err) => {
-        if (err) {
-          this._getEventTarget().dispatchEvent(new CustomEvent(EventType.ERROR, {
-            detail: {
-              src: this,
-              err: err,
-            }
-          }));
+        if (!err) {
+          return;
         }
+        this._getEventTarget().dispatchEvent(this.#createCustomEvent(EventType.ERROR, { err }));
       });
     }, this.#flushInterval);
   }
@@ -216,7 +212,13 @@ export class BufferedWriter extends Writer {
     }
 
     if (beforeVol === STATE.VOLUME.WRITABLE && afterVol === STATE.VOLUME.BACKPRESSURE) {
-      this._getEventTarget().dispatchEvent(this.#createCustomEvent(EventType.BACKPRESSURE));
+      this._getEventTarget().dispatchEvent(this.#createCustomEvent(EventType.BACKPRESSURE, {
+        waitUntilDrain: () => {
+          return new Promise(resolve => {
+            this._getEventTarget().addEventListener(EventType.DRAIN, () => resolve(), { once: true });
+          })
+        }
+      }));
     } else if (beforeVol === STATE.VOLUME.BACKPRESSURE && afterVol === STATE.VOLUME.WRITABLE) {
       this._getEventTarget().dispatchEvent(this.#createCustomEvent(EventType.DRAIN));
     }
@@ -229,10 +231,11 @@ export class BufferedWriter extends Writer {
    * @param {string} eventType 
    * @returns {CustomEvent}
    */
-  #createCustomEvent(eventType) {
+  #createCustomEvent(eventType, detail = {}) {
     return new CustomEvent(eventType, {
       detail: {
-        src: this
+        src: this,
+        ...detail
       }
     });
   }

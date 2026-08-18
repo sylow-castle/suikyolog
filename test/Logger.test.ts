@@ -92,7 +92,7 @@ describe("Loggerクラスのテスト", () => {
   });
 
   test(`各種ログレベルのメソッドを呼んだ時のPriは対応するログレベルになる`, () => {
-    let writer = new MemoryWriter()
+    const writer = new MemoryWriter()
     const logger = new Logger(TransporterBuilder.start(SEVERITY_NUM.Debug)
       .encodedBy(new SimpleEncoder())
       .write(writer)

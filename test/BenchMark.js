@@ -6,16 +6,13 @@ import { TransporterBuilder } from "../src/core/TransporterBuilder.js";
 import * as EventType from "../src/core/EventType.js";
 import { BufferedWriter } from "../src/core/BufferedWriter.js";
 import { SyncFileWriter } from "../src/node/SyncFileWriter.js";
-import { StreamFileWriter } from "../src/node/StreamFileWriter.js";
-import { BackpressureStrategy } from "../src/node/BackpressureStrategy.js";
+import { OnBackpressureWriter } from "../src/core/OnBackpressureWriter.js";
 
-let writer = null;
-let outer = null;
 const logger = new Logger(TransporterBuilder.start(7)
   .encodedBy(new SyslogEncoder())
-  //  .via(inner => outer = new BufferedWriter(inner, 2000, 100, 64 * 1024))
-  //  .write(writer = new SyncFileWriter({ path: "tmp/test.txt" }))
-  .write(new StreamFileWriter({ path: "tmp/test.txt", backpressure: BackpressureStrategy.Wait() }))
+  .via(inner => OnBackpressureWriter.Wait(inner))
+  .via(inner => new BufferedWriter(inner, { length: 2000, interval: 100, volume: 64 * 1024 }))
+  .write(new SyncFileWriter({ path: "tmp/test.txt" }))
   .end());
 const VOLUME = 100000;
 const startTime = performance.now();
